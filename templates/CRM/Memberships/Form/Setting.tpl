@@ -52,7 +52,7 @@
                   <td class="label">{$form.memberships_type_rule.$type_id.regular.label}</td>
                   <td>
                       {$form.memberships_type_rule.$type_id.regular.html}<br/>
-                    <span class="description">Regular Membersihp Fee.</span>
+                    <span class="description">Regular Membership Fee.</span>
                   </td>
                 </tr>
                 <tr>
@@ -81,9 +81,9 @@
                   <td></td>
                   <td colspan="3">
                     <span class="description">
-                    In case Custom Field, use option value for comparting value.
+                    In case Custom Field, use option value for comparing value.
                     <br/>
-                      For In , Between Operator, use comma between the value.</span>
+                      For In and Between Operator, use comma between the value.</span>
                   </td>
                 </tr>
               </table>
