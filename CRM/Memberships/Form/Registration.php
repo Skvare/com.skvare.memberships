@@ -68,4 +68,35 @@ class CRM_Memberships_Form_Registration extends CRM_Contribute_Form_AbstractEdit
     $values = $this->exportValues();
     parent::postProcess();
   }
+
+  protected function addPaymentProcessorSelect($isRequired, $isBuildRecurBlock = FALSE, $isBuildAutoRenewBlock = FALSE) {
+    if (!$this->_mode) {
+      return;
+    }
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+
+    $processorList = [];
+    foreach ($this->_processors as $id => $label) {
+      if (in_array($id, array_keys
+      ($defaults['memberships_payment_processor']))) {
+        $processorList[$id] = $label;
+      }
+    }
+    $js = ($isBuildRecurBlock ? ['onChange' => "buildRecurBlock( this.value ); return false;"] : NULL);
+    if ($isBuildAutoRenewBlock) {
+      $js = ['onChange' => "buildAutoRenew( null, this.value, '{$this->_mode}');"];
+    }
+    $element = $this->add('select',
+      'payment_processor_id',
+      ts('Payment Processor'),
+      array_diff_key($processorList, [0 => 1]),
+      $isRequired,
+      $js
+    );
+    // The concept of _online is not really explained & the code is old
+    // @todo figure out & document.
+    if ($this->_online) {
+      $element->freeze();
+    }
+  }
 }

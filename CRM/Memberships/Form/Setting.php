@@ -22,44 +22,28 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
 
     $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $this->add('select', 'memberships_membership_types', 'Membership Type',
-      $membershipTypes,
-      TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder'
-      => ts('- any -')]);
+      $membershipTypes, TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
 
     $tags = ['' => '-- select --'] + CRM_Core_PseudoConstant::get('CRM_Core_DAO_EntityTag', 'tag_id', ['onlyActive' => FALSE]);
     $this->add('select', 'memberships_tags_full_paid', 'Tag Contact on Full one time payment',
-      $tags,
-      TRUE, ['class' => 'crm-select2', 'placeholder'
-      => ts('- any -')]);
+      $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
     $this->add('select', 'memberships_tags_partial_paid', 'Tags Contact on partial payment',
-      $tags,
-      TRUE, ['class' => 'crm-select2', 'placeholder'
-      => ts('- any -')]);
+      $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
     
-     $this->assign('membershipTypes', $membershipTypes);
+    $this->assign('membershipTypes', $membershipTypes);
 
     $civicrmFields = CRM_Memberships_Helper::getCiviCRMFields();
     $operators = ['' => ts('-operator-')] +
       CRM_Memberships_Helper::getOperators();
     foreach($membershipTypes as $membershipTypeID => $membershipTypeName) {
-      $this->add('text', "memberships_type_rule[$membershipTypeID][regular]",
-        "Regular Fee",
-        [], FALSE);
-      $this->add('text', "memberships_type_rule[$membershipTypeID][discount]", "Discounted Fee",
-        [], FALSE);
-      $this->add('datepicker', "memberships_type_rule[$membershipTypeID][discount_date]", ts('Discount befoe Date'), [], FALSE, ['time' => TRUE]);
+      $this->add('text', "memberships_type_rule[$membershipTypeID][regular]", "Regular Fee", [], FALSE);
+      $this->add('text', "memberships_type_rule[$membershipTypeID][discount]", "Discounted Fee", [], FALSE);
+      $this->add('datepicker', "memberships_type_rule[$membershipTypeID][discount_date]", ts('Discount before Date'), [], FALSE, ['time' => TRUE]);
 
-
-      $this->add('select', "memberships_type_rule[$membershipTypeID][field]", "CiviCRM Field", $civicrmFields,
-        FALSE, ['class' => 'crm-select2', 'placeholder'
-        => ts('- any -')]);
-      $this->add('select', "memberships_type_rule[$membershipTypeID][operator]",
-        "Operator", $operators,
-        FALSE, ['class' => 'crm-select2', 'placeholder'
-        => ts('- any -')]);
+      $this->add('select', "memberships_type_rule[$membershipTypeID][field]", "CiviCRM Field", $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+      $this->add('select', "memberships_type_rule[$membershipTypeID][operator]", "Operator", $operators, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
       $this->add('text', "memberships_type_rule[$membershipTypeID][condition]", 'Conitional Value', ['size' => 20]);
     }
-
 
     $paymentProcessor = CRM_Core_PseudoConstant::paymentProcessor();
 
