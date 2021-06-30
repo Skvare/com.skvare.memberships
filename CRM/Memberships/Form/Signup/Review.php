@@ -35,7 +35,7 @@ class CRM_Memberships_Form_Signup_Review extends CRM_Memberships_Form_Registrati
     //echo '<pre>$defaultsConfig';print_r($defaultsConfig); echo '</pre>';
     // add form elements
     // add form elements
-    $membershipTypes = CRM_Member_PseudoConstant::membershipType();
+    $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $totalAmount = 0;
     foreach ($this->_membershipTypeContactMapping as $contactID => &$details) {
       [$originalFee, $sellingFee, $discountAmount] =

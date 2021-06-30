@@ -20,13 +20,12 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       CRM_Memberships_Helper::relationshipTypes(),
       TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
 
-    $membershipTypes = CRM_Member_PseudoConstant::membershipType();
+    $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $this->add('select', 'memberships_membership_types', 'Membership Type',
       $membershipTypes,
       TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder'
       => ts('- any -')]);
 
-    $membershipTypes = CRM_Member_PseudoConstant::membershipType();
     $tags = ['' => '-- select --'] + CRM_Core_PseudoConstant::get('CRM_Core_DAO_EntityTag', 'tag_id', ['onlyActive' => FALSE]);
     $this->add('select', 'memberships_tags_full_paid', 'Tag Contact on Full one time payment',
       $tags,
@@ -157,14 +156,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
    */
   public function setDefaultValues() {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
-    //echo '<pre>'; print_r($defaults); echo '</pre>';
 
     return $defaults;
   }
-
-  public function getMemberhsiptypes() {
-    $defaults = CRM_Memberships_Helper::getSettingsConfig();
-    $membershipTypes = CRM_Member_PseudoConstant::membershipType();
-  }
-
 }

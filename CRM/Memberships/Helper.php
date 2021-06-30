@@ -99,9 +99,21 @@ class CRM_Memberships_Helper {
     return self::getMachingType($defaultsConfig, $resultContact);
   }
 
+  public static function membershipTypeCurrentDomain() {
+    $result = civicrm_api3('MembershipType', 'get', [
+      'sequential' => 1,
+      'return' => ["id", "name"],
+    ]);
+    $membershipType = [];
+    foreach ($result['values'] as $details) {
+      $membershipType[$details['id']] = $details['name'];
+    }
+    return $membershipType;
+  }
+
   public static function membershipType() {
     $defaultsConfig = CRM_Memberships_Helper::getSettingsConfig();
-    $membershipTypes = CRM_Member_PseudoConstant::membershipType();
+    $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $membershipTypesFiltered = [];
     foreach ($membershipTypes as $id => $name) {
       if (in_array($id, $defaultsConfig['memberships_membership_types'])) {
