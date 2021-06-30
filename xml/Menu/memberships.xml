@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/members/signup</path>
+    <page_callback>CRM_Memberships_Controller_Memberships</page_callback>
+    <title>Memberhsip Signup</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+  <item>
+    <path>civicrm/admin/memberships/setting</path>
+    <page_callback>CRM_Memberships_Form_Setting</page_callback>
+    <title>Setting</title>
+    <access_arguments>administer CiviCRM</access_arguments>
+  </item>
+</menu>

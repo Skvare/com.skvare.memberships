@@ -1,0 +1,87 @@
+<?php
+
+use CRM_Dbcfcheck_ExtensionUtil as E;
+
+return [
+  'memberships_financial_type' => [
+    'group_name' => E::ts('Memberships Settings'),
+    'group' => 'com.skvare.memberships',
+    'name' => 'memberships_financial_type',
+    'type' => 'Array',
+    'add' => '5.27',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'Membership Financial Type',
+    'title' => 'Membership Financial Type',
+    'help_text' => 'Membership Financial Type',
+    'html_type' => 'Select',
+    'default' => '',
+    'quick_form_type' => 'Select',
+    'html_attributes' => [
+      'class' => 'crm-select2',
+    ],
+    'pseudoconstant' => [
+      'callback' => 'CRM_Memberships_Helper::financialTypes',
+    ],
+  ],
+  'memberships_membership_types' => [
+    'group_name' => E::ts('Memberships Settings'),
+    'group' => 'com.skvare.memberships',
+    'name' => 'memberships_membership_types',
+    'type' => 'Array',
+    'add' => '4.7',
+    'default' => '',
+    'title' => E::ts('Membership Types'),
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => E::ts('Membership Types'),
+    'help_text' => E::ts('Membership Types'),
+    'html_type' => 'Select',
+    'default' => '',
+    'quick_form_type' => 'Select',
+    'html_attributes' => [
+      'multiple' => 1,
+      'class' => 'crm-select2',
+    ],
+    'pseudoconstant' => [
+      'callback' => 'CRM_Member_PseudoConstant::membershipType',
+    ],
+  ],
+  'memberships_relationships' => [
+    'group_name' => 'Memberships Settings',
+    'group' => 'com.skvare.memberships',
+    'name' => 'memberships_relationships',
+    'type' => 'Array',
+    'default' => NULL,
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => E::ts('Relationship Types'),
+    'help_text' => E::ts('Relationship Types'),
+    'html_type' => 'Select',
+    'default' => '',
+    'title' => E::ts('Relationship Types'),
+    'quick_form_type' => 'Select',
+    'html_attributes' => [
+      'multiple' => 1,
+      'class' => 'crm-select2',
+    ],
+    'pseudoconstant' => [
+      'callback' => 'CRM_Memberships_Helper::relationshipTypes',
+    ],
+  ],
+  'memberships_membership_type_mapping' => [
+    'group_name' => 'Memberships Setting',
+    'group' => 'com.skvare.memberships',
+    'name' => 'memberships_membership_type_mapping',
+    'type' => 'String',
+    'html_type' => 'textarea',
+    'default' => '',
+    'add' => '5.13',
+    'title' => 'Field Mapping',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => NULL,
+    'help_text' => NULL,
+    'description' => 'Use the format X:custom_Y:1-4',
+  ],
+];
