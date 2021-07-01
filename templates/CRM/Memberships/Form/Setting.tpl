@@ -43,10 +43,40 @@
       </td>
     </tr>
       {foreach from=$membershipTypes key=type_id item=label}
-
+        {if $type_id|in_array:$memberships_membership_types}
         <tr><td colspan="2">
             <fieldset>
               <legend>{$label}</legend>
+                {if $index GT 1}
+                  <div><i class="crm-i fa-clone action-icon" fname="{$previous_type_id}" tname="{$type_id}"><span class="sr-only">$text</span></i> Copy rows from {$previous_label}</div>{/if}
+
+                {assign var=previous_type_id value=$type_id}
+                {assign var=previous_label value=$label}
+              <table>
+                <tr class="columnheader">
+                  <td>{ts}Discount Set{/ts}</td>
+                  <td>{ts}Start Date{/ts}</td>
+                  <td>{ts}End Date{/ts}</td>
+                  <td>{ts}Child 1{/ts}</td>
+                  <td>{ts}Child 2{/ts}</td>
+                  <td>{ts}Child 3{/ts}</td>
+                  <td>{ts}Child 4 and more{/ts}</td>
+                </tr>
+
+                {section name=rowLoop start=1 loop=6}
+                {assign var=index value=$smarty.section.rowLoop.index}
+                <tr id="discount_{$index}" class="form-item {cycle values="odd-row,even-row"}">
+                  <td>{$form.memberships_type_rule.$type_id.$index.discount_name.html}</td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.discount_start_date.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.discount_end_date.html} </td>
+
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_1.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_2.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_3.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_4.html} </td>
+                </tr>
+                {/section}
+              </table>
               <table class="form-layout">
                 <tr>
                   <td class="label">{$form.memberships_type_rule.$type_id.regular.label}</td>
@@ -55,19 +85,7 @@
                     <span class="description">Regular Membership Fee.</span>
                   </td>
                 </tr>
-                <tr>
-                  <td class="label">{$form.memberships_type_rule.$type_id.discount.label}</td>
-                  <td>
-                      {$form.memberships_type_rule.$type_id.discount.html}<br/>
-                    <span class="description">Discounted Membership Fee.</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td class="label">{$form.memberships_type_rule.$type_id.discount_date.label}</td>
-                  <td>
-                      {$form.memberships_type_rule.$type_id.discount_date.html}<br/>
-                  </td>
-                </tr>
+
               </table>
               <table class="form-layout">
                 <tr>
@@ -89,6 +107,7 @@
               </table>
             </fieldset>
           </td></tr>
+          {/if}
       {/foreach}
   </table>
   <fieldset>
@@ -210,3 +229,27 @@
   </div>
 
 </div>
+
+{literal}
+  <script type="text/javascript">
+  CRM.$(function($) {
+    function copyFieldValues( fname , tname) {
+      $('[id^="memberships_type_rule_'+ fname +'"]').each(function(i, v) {
+        var source_id = $(this).attr('id');
+        var isDateElement     = $(this).attr('format');
+        var source_array = source_id.split('_');
+        source_array.splice(3, 1, tname);
+        var target_id = source_array.join('_');
+        $('#'+target_id).val($('#'+source_id).val()).trigger('change');
+        //console.log('ID :' + source_id + ' > ' + target_id);
+      });
+    };
+    //bind the click event for action icon
+    $('.action-icon').click(function( ) {
+      copyFieldValues($(this).attr('fname'), $(this).attr('tname'));
+    });
+  });
+
+  </script>
+{/literal}
+

@@ -67,18 +67,39 @@ class CRM_Memberships_Helper {
     return $cleanFields;
   }
 
-  public static function getMembershipFee($membershipTypeID) {
+  public static function getMembershipFee($membershipTypeID, $contactID,
+                                          $currentUserID, $childNumber) {
     $defaultsConfig = CRM_Memberships_Helper::getSettingsConfig();
     $membershipFeeDetails = $defaultsConfig['memberships_type_rule'][$membershipTypeID];
-    if (!empty($membershipFeeDetails['discount_date']) && !empty($membershipFeeDetails['discount'])) {
-      $isOverDue = CRM_Utils_Date::overdue($membershipFeeDetails['discount_date']);
-      if (!$isOverDue) {
-        $discountAmount =  $membershipFeeDetails['regular'] - $membershipFeeDetails['discount'];
-        return [$membershipFeeDetails['regular'], $membershipFeeDetails['discount'], $discountAmount];
+    $currentDate = strtotime(date('YmdHis'));
+    //$currentDate = strtotime("15 September 2021");
+    //$currentDate = strtotime("15 January 2022");
+    //$currentDate = strtotime("15 March 2022");
+    $childNumber = ($childNumber >= 4) ? 4 : $childNumber;
+    $defaultFee = $sellFee = $membershipFeeDetails['regular'];
+    if ($contactID != $currentUserID) {
+      foreach ($membershipFeeDetails as $discountDetails) {
+        if (is_array($discountDetails)) {
+          $startDate = self::cleanDate($discountDetails['discount_start_date']);
+          $endDate = self::cleanDate($discountDetails['discount_end_date']);
+          if ($startDate && $endDate && ($currentDate >= $startDate && $currentDate <= $endDate)) {
+            $sellFee = $discountDetails['child_' . $childNumber];
+            break;
+          }
+          elseif (!empty($startDate) && empty($endDate) && ($currentDate >= $startDate)) {
+            $sellFee = $discountDetails['child_' . $childNumber];
+            break;
+          }
+          elseif (empty($startDate) && !empty($endDate) && ($currentDate <= $endDate)) {
+            $sellFee = $discountDetails['child_' . $childNumber];
+            break;
+          }
+        }
       }
     }
+    $discountAmount = $defaultFee - $sellFee;
 
-    return [$membershipFeeDetails['regular'], $membershipFeeDetails['regular'], 0];
+    return [$defaultFee, $sellFee, $discountAmount];
   }
 
   public static function getDefaultFeeOption($contactID) {
@@ -180,4 +201,11 @@ class CRM_Memberships_Helper {
     ];
   }
 
+  public static function cleanDate($date) {
+    if (empty($date))
+      return;
+    $mysqlDate = CRM_Utils_Date::isoToMysql($date);
+
+    return $mysqlDate = strtotime($mysqlDate);
+  }
 }

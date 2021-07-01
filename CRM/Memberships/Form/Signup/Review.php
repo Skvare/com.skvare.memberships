@@ -37,10 +37,14 @@ class CRM_Memberships_Form_Signup_Review extends CRM_Memberships_Form_Registrati
     // add form elements
     $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $totalAmount = 0;
+    $childNumber = 0;
     foreach ($this->_membershipTypeContactMapping as $contactID => &$details) {
+      if ($contactID != $this->_contactID) {
+        $childNumber++;
+      }
       [$originalFee, $sellingFee, $discountAmount] =
       CRM_Memberships_Helper::getMembershipFee
-      ($details['membership_type_id']);
+      ($details['membership_type_id'], $contactID, $this->_contactID, $childNumber);
       $details['membership_type_name'] = $membershipTypes[$details['membership_type_id']];
       $details['original_amount'] = $originalFee;
       $details['fee_amount'] = $sellingFee;
