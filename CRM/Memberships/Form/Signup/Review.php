@@ -42,15 +42,21 @@ class CRM_Memberships_Form_Signup_Review extends CRM_Memberships_Form_Registrati
       if ($contactID != $this->_contactID) {
         $childNumber++;
       }
-      [$originalFee, $sellingFee, $discountAmount] =
-      CRM_Memberships_Helper::getMembershipFee
-      ($details['membership_type_id'], $contactID, $this->_contactID, $childNumber);
+      [$originalFee, $sellingFee, $discountAmount, $siblingDiscountFee, $discountName] =
+        CRM_Memberships_Helper::getMembershipFee
+        ($details['membership_type_id'], $contactID, $this->_contactID, $childNumber);
+
       $details['membership_type_name'] = $membershipTypes[$details['membership_type_id']];
       $details['original_amount'] = $originalFee;
+      $details['fee_amount_sibling'] = $siblingDiscountFee;
+
+      $totalAmount += $sellingFee;
       $details['fee_amount'] = $sellingFee;
-      $totalAmount += $details['fee_amount'];
       $details['display_name'] = $this->_allRelatedContact[$contactID]['display_name'];
       $details['discount'] = $discountAmount;
+      $details['discount_name'] = $discountName;
+      $t = $details['membership_type_id'];
+      $this->add('hidden', "memberships_type_rule['price'][$contactID][$t]", $sellingFee);
     }
     $this->assign('contact_details', $this->_membershipTypeContactMapping);
     $this->assign('total_amount', $totalAmount);
@@ -86,7 +92,13 @@ class CRM_Memberships_Form_Signup_Review extends CRM_Memberships_Form_Registrati
   public function setDefaultValues() {
     $defaults = [];
     $defaults = $this->getBillingDefaults($defaults);
-
+    /*
+    $defaults['credit_card_number'] = '4111111111111111';
+    $defaults['cvv2'] = '111';
+    $defaults['credit_card_exp_date']['M'] = '5';
+    $defaults['credit_card_exp_date']['Y'] = '2024';
+    $defaults['credit_card_type'] = 'Visa';
+    */
     return $defaults;
   }
 

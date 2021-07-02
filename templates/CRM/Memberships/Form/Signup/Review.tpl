@@ -13,8 +13,17 @@
                 <tr id='rowid{$contactID}' class="{cycle values="odd-row,even-row"}">
                     <td>{$contact.display_name}</td>
                     <td>{$contact.membership_type_name}</td>
-                    <td>{$contact.discount|crmMoney}</td>
-                    <td>{$contact.fee_amount|crmMoney}
+                    <td>
+                        {if $contact.discount} {$contact.discount_name}: &nbsp;
+                            {$contact.discount|crmMoney}{else}-{/if}
+
+                        {if $contact.fee_amount_sibling}
+                            <br/>
+                            Sibling : {$contact.fee_amount_sibling|crmMoney}
+                        {/if}
+                    </td>
+                    <td>
+                        {$contact.fee_amount|crmMoney}
                         {if $contact.discount}
                             &nbsp;({$contact.original_amount|crmMoney})
                         {/if}

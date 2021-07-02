@@ -77,9 +77,12 @@ class CRM_Memberships_Helper {
     //$currentDate = strtotime("15 March 2022");
     $childNumber = ($childNumber >= 4) ? 4 : $childNumber;
     $defaultFee = $sellFee = $membershipFeeDetails['regular'];
+    $siblingDiscountFee = 0;
+    $discountName = '';
     if ($contactID != $currentUserID) {
       foreach ($membershipFeeDetails as $discountDetails) {
-        if (is_array($discountDetails)) {
+        if (is_array($discountDetails) && !empty($discountDetails['child_' . $childNumber])) {
+          $discountName = $discountDetails['discount_name'];
           $startDate = self::cleanDate($discountDetails['discount_start_date']);
           $endDate = self::cleanDate($discountDetails['discount_end_date']);
           if ($startDate && $endDate && ($currentDate >= $startDate && $currentDate <= $endDate)) {
@@ -96,10 +99,30 @@ class CRM_Memberships_Helper {
           }
         }
       }
+
+      foreach ($membershipFeeDetails as $discountDetails) {
+        if (is_array($discountDetails) && !empty($discountDetails['sibling_' . $childNumber])) {
+          $startDate = self::cleanDate($discountDetails['discount_start_date']);
+          $endDate = self::cleanDate($discountDetails['discount_end_date']);
+          if ($startDate && $endDate && ($currentDate >= $startDate && $currentDate <= $endDate)) {
+            $siblingDiscountFee = $discountDetails['sibling_' . $childNumber];
+            break;
+          }
+          elseif (!empty($startDate) && empty($endDate) && ($currentDate >= $startDate)) {
+            $siblingDiscountFee = $discountDetails['sibling_' . $childNumber];
+            break;
+          }
+          elseif (empty($startDate) && !empty($endDate) && ($currentDate <= $endDate)) {
+            $siblingDiscountFee = $discountDetails['sibling_' . $childNumber];
+            break;
+          }
+        }
+      }
     }
     $discountAmount = $defaultFee - $sellFee;
+    $sellFee = $sellFee - $siblingDiscountFee;
 
-    return [$defaultFee, $sellFee, $discountAmount];
+    return [$defaultFee, $sellFee, $discountAmount, $siblingDiscountFee, $discountName];
   }
 
   public static function getDefaultFeeOption($contactID) {

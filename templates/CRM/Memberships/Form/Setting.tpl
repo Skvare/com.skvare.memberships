@@ -42,6 +42,27 @@
         <div class="description">Assign Tag to contact on partial payment, this tag are required to register for an event.</div>
       </td>
     </tr>
+    <tr>
+      <td class="label">{$form.jcc_discount.label}</td>
+      <td>
+          {$form.jcc_discount.html} - {$form.jcc_discount_type.html}<br/>
+        <div class="description">This discount would get applied on total amount get from regular discount like early bird and sibling disount. This will be only available if parent is Member of Jewish Community Center</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">{$form.specal_discount_group.label}</td>
+      <td>
+          {$form.specal_discount_group.html} - {$form.specal_discount.html} - {$form.specal_discount_type.html}<br/>
+        <div class="description">This discount would be available to the contact present in this group.</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">{$form.financial_discount_group.label}</td>
+      <td>
+          {$form.financial_discount_group.html}
+        <div class="description">This discount would be available to the contact present in this group.</div>
+      </td>
+    </tr>
       {foreach from=$membershipTypes key=type_id item=label}
         {if $type_id|in_array:$memberships_membership_types}
         <tr><td colspan="2">
@@ -65,7 +86,8 @@
 
                 {section name=rowLoop start=1 loop=6}
                 {assign var=index value=$smarty.section.rowLoop.index}
-                <tr id="discount_{$index}" class="form-item {cycle values="odd-row,even-row"}">
+                <tr id="discount_{$index}" class="form-item {cycle values="odd-row, odd-row,even-row,even-row"}"
+                    style="border-top:1pt solid black;">
                   <td>{$form.memberships_type_rule.$type_id.$index.discount_name.html}</td>
                   <td>{$form.memberships_type_rule.$type_id.$index.discount_start_date.html} </td>
                   <td>{$form.memberships_type_rule.$type_id.$index.discount_end_date.html} </td>
@@ -74,6 +96,15 @@
                   <td>{$form.memberships_type_rule.$type_id.$index.child_2.html} </td>
                   <td>{$form.memberships_type_rule.$type_id.$index.child_3.html} </td>
                   <td>{$form.memberships_type_rule.$type_id.$index.child_4.html} </td>
+                </tr>
+                <tr id="discount_{$index}" class="form-item {cycle values="odd-row, odd-row,even-row,even-row"}"
+                    style="border-bottom:1pt solid black;border-top:1pt dotted black;">
+                  <td colspan="3">Sibling Discount<br>
+                    <span class="description">keep empty discount text block for not giving any discount.</span></td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.sibling_1.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.sibling_2.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.sibling_3.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.sibling_4.html} </td>
                 </tr>
                 {/section}
               </table>

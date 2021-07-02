@@ -209,12 +209,11 @@ class CRM_Memberships_Utils {
   public static function processForm(&$form, $params) {
     $contactId = CRM_Core_Session::getLoggedInContactID();
     //echo '<pre>$params####-----';print_r($params);echo '</pre>';
-    //exit;
+
     if (!$contactId) {
       throw new API_Exception("You do not have permission to access this api", 1);
     }
-    $lineItems = self::makeLineItemArray($params['contacts']);
-
+    $lineItems = self::makeLineItemArray2($params['contacts']);
     [$payment, $isSuccessfull, $errorMsg] = self::makeRegistrationPayment($params['paymentDetails'], $lineItems, $contactId);
     $template = CRM_Core_Smarty::singleton();
     $template->assign('isSuccessfull', $isSuccessfull);
@@ -520,6 +519,68 @@ class CRM_Memberships_Utils {
     }
   }
 
+  public static function makeLineItemArray2($contacts) {
+    $result = civicrm_api3('PriceField', 'get', [
+      'sequential' => 1,
+      'price_set_id' => "default_membership_type_amount",
+      'api.PriceFieldValue.get' => [],
+    ]);
+
+    $priceFields = $result['values']['0']['api.PriceFieldValue.get']['values'];
+
+    $resultContribution = civicrm_api3('PriceField', 'get', [
+      'sequential' => 1,
+      'price_set_id' => "default_contribution_amount",
+      'api.PriceFieldValue.get' => [],
+    ]);
+
+    $priceFieldsContribution = reset($resultContribution['values']['0']['api.PriceFieldValue.get']['values']);
+    //echo '<pre>$priceFieldsContribution####-----';print_r($priceFieldsContribution);echo '</pre>';
+    //exit;
+    $total = 0;
+    foreach ($contacts as $cid => &$contact) {
+      //fetch the display name because it may have been updated
+      $displayName = $contact['display_name'];
+      $subTotal = 0;
+      $details = [];
+      $details['lineItems'] = [];
+
+      foreach ($priceFields as $priceField) {
+        if ($priceField['membership_type_id'] == $contact['membership_type_id']) {
+          $priceFieldDetails = self::getPriceFees($contact['membership_type_id']);
+          $item = [];
+          $item['0'] = [];
+          $item['0']['qty'] = 1;
+          $item['0']['financial_type_id'] = $priceFieldDetails['financial_type_id'];
+          $item['0']['price_field_id'] = $priceFieldDetails['field_id'];
+          $item['0']['price_field_value_id'] = $priceFieldDetails['field_value_id'];
+          $item['0']['unit_price'] = $contact['fee_amount'];
+          $item['0']['line_total'] = $contact['fee_amount'];
+          $item['0']['label'] = "{$displayName}: Membership - {$priceField['label']}";
+
+          if (false && !empty($contact['fee_amount_sibling'])) {
+            $item['1'] = [];
+            $item['1']['qty'] = 1;
+            $item['1']['financial_type_id'] = $priceFieldDetails['financial_type_id'];
+            $item['1']['price_field_id'] = $priceFieldsContribution['price_field_id'];
+            $item['1']['price_field_value_id'] = $priceFieldsContribution['id'];
+            $item['1']['unit_price'] = $contact['fee_amount_sibling'];
+            $item['1']['line_total'] = $contact['fee_amount_sibling'];
+            $item['1']['label'] = "{$displayName}: - Sibling Disount";
+          }
+          $details['lineItems'] = $item;
+          $subTotal += $contact['fee_amount'];
+          //$subTotal += $contact['fee_amount_sibling'];
+        }
+      }
+      $details['subtotal'] = $subTotal;
+      $subTotals[$cid] = $details;
+      $total += $subTotal;
+    }
+
+    //exit;
+    return ["total" => $total, "members" => $subTotals];
+  }
 
   /**
    * Creates an array of lineItem data for each participant so we can loop and add participants
@@ -676,7 +737,7 @@ class CRM_Memberships_Utils {
   }
 
   public static function getPriceFees($membershipTypeID) {
-    $query = "select f.id as field_id, fv.id as field_value_id
+    $query = "select f.id as field_id, fv.id as field_value_id, fv.financial_type_id
       from civicrm_price_set s
       inner join civicrm_price_field f on (s.id = f.price_set_id)
       inner join civicrm_price_field_value fv on (fv.price_field_id = f.id)
@@ -688,6 +749,7 @@ class CRM_Memberships_Utils {
     while ($dao->fetch()) {
       $priceField['field_id'] = $dao->field_id;
       $priceField['field_value_id'] = $dao->field_value_id;
+      $priceField['financial_type_id'] = $dao->financial_type_id;
     }
 
     return $priceField;

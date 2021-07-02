@@ -37,6 +37,30 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
     $operators = ['' => ts('-operator-')] +
       CRM_Memberships_Helper::getOperators();
 
+    $attribute = ['class' => 'crm-select2', 'placeholder' => ts('- any -')];
+    $this->add('text', "jcc_discount", ts('JCC Discount'), ['size' => 20]);
+    $this->add('select', 'jcc_discount_type', ts('JCC Discount Type'),
+      [
+        1 => E::ts('Percent'),
+        2 => E::ts('Fixed Amount'),
+      ],
+      FALSE, $attribute);
+
+    $groups = ['' => '-- select --'] + CRM_Core_PseudoConstant::nestedGroup();
+    $this->add('select', 'specal_discount_group', ts('Special Discount'),
+      $groups, FALSE, $attribute);
+    $this->add('text', "specal_discount", ts('Specail Discount'), ['size' =>
+      20]);
+    $this->add('select', 'specal_discount_type', ts('JCC Discount Type'),
+      [
+        1 => E::ts('Percent'),
+        2 => E::ts('Fixed Amount'),
+      ],
+      FALSE, $attribute);
+
+    $this->add('select', 'financial_discount_group', ts('Financial assistance/discount'),
+      $groups, FALSE, $attribute);
+
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (!empty($defaults['memberships_membership_types'])) {
       $this->assign('memberships_membership_types', $defaults['memberships_membership_types']);
@@ -52,6 +76,11 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_2]", ts('Child 2'), ['size' => 5]);
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_3]", ts('Child 3'), ['size' => 5]);
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_4]", ts('Child 4'), ['size' => 5]);
+
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_1]", ts('Sibling 1'), ['size' => 5]);
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_2]", ts('Sibling 2'), ['size' => 5]);
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_3]", ts('Sibling 3'), ['size' => 5]);
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_4]", ts('Sibling 4'), ['size' => 5]);
         }
         $this->add('select', "memberships_type_rule[$membershipTypeID][field]", "CiviCRM Field", $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
         $this->add('select', "memberships_type_rule[$membershipTypeID][operator]", "Operator", $operators, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
@@ -156,7 +185,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
    */
   public function setDefaultValues() {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
-
+    //echo '<pre>';print_r($defaults); echo '</pre>';
     return $defaults;
   }
 }
