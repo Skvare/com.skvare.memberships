@@ -68,7 +68,8 @@ class CRM_Memberships_Helper {
   }
 
   public static function getMembershipFee($membershipTypeID, $contactID,
-                                          $currentUserID, $childNumber) {
+                                          $currentUserID, $childNumber,
+                                          $isJccMember = FALSE) {
     $defaultsConfig = CRM_Memberships_Helper::getSettingsConfig();
     $membershipFeeDetails = $defaultsConfig['memberships_type_rule'][$membershipTypeID];
     $currentDate = strtotime(date('YmdHis'));
@@ -81,7 +82,24 @@ class CRM_Memberships_Helper {
     $discountName = '';
     if ($contactID != $currentUserID) {
       foreach ($membershipFeeDetails as $discountDetails) {
-        if (is_array($discountDetails) && !empty($discountDetails['child_' . $childNumber])) {
+        if ($isJccMember && is_array($discountDetails) && !empty($discountDetails['child_jcc_' . $childNumber])) {
+          $discountName = $discountDetails['discount_name'];
+          $startDate = self::cleanDate($discountDetails['discount_start_date']);
+          $endDate = self::cleanDate($discountDetails['discount_end_date']);
+          if ($startDate && $endDate && ($currentDate >= $startDate && $currentDate <= $endDate)) {
+            $sellFee = $discountDetails['child_jcc_' . $childNumber];
+            break;
+          }
+          elseif (!empty($startDate) && empty($endDate) && ($currentDate >= $startDate)) {
+            $sellFee = $discountDetails['child_jcc_' . $childNumber];
+            break;
+          }
+          elseif (empty($startDate) && !empty($endDate) && ($currentDate <= $endDate)) {
+            $sellFee = $discountDetails['child_jcc_' . $childNumber];
+            break;
+          }
+        }
+        elseif (is_array($discountDetails) && !empty($discountDetails['child_' . $childNumber])) {
           $discountName = $discountDetails['discount_name'];
           $startDate = self::cleanDate($discountDetails['discount_start_date']);
           $endDate = self::cleanDate($discountDetails['discount_end_date']);
@@ -152,6 +170,7 @@ class CRM_Memberships_Helper {
     foreach ($result['values'] as $details) {
       $membershipType[$details['id']] = $details['name'];
     }
+
     return $membershipType;
   }
 
@@ -230,5 +249,84 @@ class CRM_Memberships_Helper {
     $mysqlDate = CRM_Utils_Date::isoToMysql($date);
 
     return $mysqlDate = strtotime($mysqlDate);
+  }
+
+  public static function getMembershipTobeProcessed($allRelatedContact) {
+    $membershipContact = [];
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    $returnField = ["display_name"];
+    if (!empty($defaults['memberships_jcc_field'])) {
+      $returnField[] = $defaults['memberships_jcc_field'];
+    }
+    $params = [
+      'sequential' => 1,
+      'options' => ['limit' => 1],
+    ];
+    if (!empty($defaults['memberships_type_field']) && !empty($defaults['memberships_type_operator']) && !empty($defaults['memberships_type_condition'])) {
+      $params[$defaults['memberships_type_field']] = $defaults['memberships_type_condition'];
+    }
+
+    foreach ($allRelatedContact as $cid => $contactDetails) {
+      $params['contact_id'] = $cid;
+      $result = civicrm_api3('Membership', 'get', $params);
+      if (!empty($result['values'])) {
+        $membershipContact[$cid] = $contactDetails;
+        $membership = reset($result['values']);
+        $membershipContact[$cid]['membership_id'] = $membership['id'];
+        $membershipContact[$cid]['membership_name'] = $membership['membership_name'];
+        $membershipContact[$cid]['membership_type_id'] = $membership['membership_type_id'];
+      }
+    }
+
+    return $membershipContact;
+  }
+
+  public static function prepareMemberList($currentUser,
+                                           &$membershipTobWithContact,
+                                           $isJccMember) {
+    $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
+    $totalAmount = 0;
+    $childNumber = 0;
+    $membershipTypeContactMapping = [];
+    foreach ($membershipTobWithContact as $contactID => &$details) {
+      if ($contactID != $currentUser) {
+        $childNumber++;
+      }
+      [$originalFee, $sellingFee, $discountAmount, $siblingDiscountFee, $discountName] =
+        CRM_Memberships_Helper::getMembershipFee($details['membership_type_id'], $contactID, $currentUser, $childNumber, $isJccMember);
+      $details['membership_type_name'] = $membershipTypes[$details['membership_type_id']];
+      $details['original_amount'] = $originalFee;
+      $details['fee_amount_sibling'] = $siblingDiscountFee;
+
+      $totalAmount += $sellingFee;
+      $details['fee_amount'] = $sellingFee;
+      $details['discount'] = $discountAmount;
+      $details['discount_name'] = $discountName;
+    }
+
+    return $totalAmount;
+  }
+
+  public static function processMembership($familyContributionID,
+                                           $membershipTobWithContact) {
+    $result = civicrm_api3('Contribution', 'getsingle', [
+      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'receive_date', 'currency'],
+      'id' => $familyContributionID,
+    ]);
+    if ($result['contribution_status'] == 'Completed' || ($result['contribution_status'] == 'Pending' && $result['is_pay_later'] == 1)) {
+      $isPending = FALSE;
+      $isPayLater = NULL;
+      $additionalParams = [];
+      if ($result['contribution_status'] == 'Pending' && $result['is_pay_later'] == 1) {
+        $isPending = TRUE;
+        $isPayLater = 1;
+        $additionalParams = ['skipStatusCal' => TRUE];
+      }
+      $lineItems = CRM_Memberships_Utils::makeLineItemArray2($membershipTobWithContact);
+      CRM_Memberships_Utils::createMemberships($familyContributionID,
+        $lineItems, $membershipTobWithContact, $isPending, $isPayLater, $additionalParams);
+
+      CRM_Memberships_Utils::addLineItems($result, $lineItems);
+    }
   }
 }

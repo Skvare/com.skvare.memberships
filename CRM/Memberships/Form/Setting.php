@@ -30,7 +30,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
     $this->add('select', 'memberships_tags_partial_paid', 'Tags Contact on partial payment',
       $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
-    
+
     $this->assign('membershipTypes', $membershipTypes);
 
     $civicrmFields = CRM_Memberships_Helper::getCiviCRMFields();
@@ -61,6 +61,16 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
     $this->add('select', 'financial_discount_group', ts('Financial assistance/discount'),
       $groups, FALSE, $attribute);
 
+    $contributionPage = CRM_Contribute_PseudoConstant::contributionPage();
+    $this->add('select', 'memberships_contribution_page_id', ts('Online Contribution Page'),
+      $contributionPage, FALSE, $attribute + ['multiple' => 'multiple']);
+    $this->add('select', "memberships_jcc_field", "JCC Field Name",
+      $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+
+    $this->add('select', "memberships_type_field", "CiviCRM Field", $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+    $this->add('select', "memberships_type_operator", "Operator", $operators, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+    $this->add('text', "memberships_type_condition", 'Conitional Value', ['size' => 20]);
+
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (!empty($defaults['memberships_membership_types'])) {
       $this->assign('memberships_membership_types', $defaults['memberships_membership_types']);
@@ -76,6 +86,11 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_2]", ts('Child 2'), ['size' => 5]);
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_3]", ts('Child 3'), ['size' => 5]);
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_4]", ts('Child 4'), ['size' => 5]);
+
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_jcc_1]", ts('JCC Child 1'), ['size' => 5]);
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_jcc_2]", ts('JCC Child 2'), ['size' => 5]);
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_jcc_3]", ts('JCC Child 3'), ['size' => 5]);
+          $this->add('text', "memberships_type_rule[$membershipTypeID][$i][child_jcc_4]", ts('JCC Child 4'), ['size' => 5]);
 
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_1]", ts('Sibling 1'), ['size' => 5]);
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_2]", ts('Sibling 2'), ['size' => 5]);
@@ -124,13 +139,13 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       $this->addElement('checkbox', 'memberships_is_recur_interval', ts('Support recurring intervals'));
       $this->addElement('checkbox', 'memberships_is_recur_installments', ts('Offer installments'));
     }
-    $this->addButtons(array(
-      array(
+    $this->addButtons([
+      [
         'type' => 'submit',
         'name' => ts('Submit'),
         'isDefault' => TRUE,
-      ),
-    ));
+      ],
+    ]);
 
     // export form elements
     $this->assign('elementNames', $this->getRenderableElementNames());
@@ -168,13 +183,14 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
     // auto-rendered in the loop -- such as "qfKey" and "buttons". These
     // items don't have labels. We'll identify renderable by filtering on
     // the 'label'.
-    $elementNames = array();
+    $elementNames = [];
     foreach ($this->_elements as $element) {
       $label = $element->getLabel();
       if (!empty($label)) {
         $elementNames[] = $element->getName();
       }
     }
+
     return $elementNames;
   }
 
@@ -185,6 +201,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
    */
   public function setDefaultValues() {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
+
     //echo '<pre>';print_r($defaults); echo '</pre>';
     return $defaults;
   }

@@ -63,6 +63,34 @@
         <div class="description">This discount would be available to the contact present in this group.</div>
       </td>
     </tr>
+    <tr>
+      <td class="label">{$form.memberships_contribution_page_id.label}</td>
+      <td>
+          {$form.memberships_contribution_page_id.html}
+        <div class="description"></div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">{$form.memberships_jcc_field.label}</td>
+      <td>
+          {$form.memberships_jcc_field.html}
+        <div class="description">To use JCC Disount feature, choose JCC field from CiviCRM, it will check JCC value on parent contact and give discount to child.</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">Membership Match Condition</td>
+      <td>
+          <table>
+            <tr>
+              <td>{$form.memberships_type_field.html}</td>
+              <td>{$form.memberships_type_operator.html}</td>
+              <td>{$form.memberships_type_condition.html}</td>
+            </tr>
+            <tr><td colspan="3"><div class="description">set condition to pull membership record..</div></td></tr>
+
+          </table>
+      </td>
+    </tr>
       {foreach from=$membershipTypes key=type_id item=label}
         {if $type_id|in_array:$memberships_membership_types}
         <tr><td colspan="2">
@@ -86,7 +114,8 @@
 
                 {section name=rowLoop start=1 loop=6}
                 {assign var=index value=$smarty.section.rowLoop.index}
-                <tr id="discount_{$index}" class="form-item {cycle values="odd-row, odd-row,even-row,even-row"}"
+                <tr id="discount_{$index}" class="form-item {cycle
+                values="odd-row,odd-row,odd-row,even-row,even-row,even-row"}"
                     style="border-top:1pt solid black;">
                   <td>{$form.memberships_type_rule.$type_id.$index.discount_name.html}</td>
                   <td>{$form.memberships_type_rule.$type_id.$index.discount_start_date.html} </td>
@@ -97,7 +126,15 @@
                   <td>{$form.memberships_type_rule.$type_id.$index.child_3.html} </td>
                   <td>{$form.memberships_type_rule.$type_id.$index.child_4.html} </td>
                 </tr>
-                <tr id="discount_{$index}" class="form-item {cycle values="odd-row, odd-row,even-row,even-row"}"
+                <tr class="form-item {cycle values="odd-row,odd-row,odd-row,even-row,even-row,even-row"}" style="border-top:1pt dotted black;">
+                  <td colspan="3">JCC Discount<br>
+                    <span class="description">keep empty discount text block for not giving any discount.</span></td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_jcc_1.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_jcc_2.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_jcc_3.html} </td>
+                  <td>{$form.memberships_type_rule.$type_id.$index.child_jcc_4.html} </td>
+                </tr>
+                <tr id="discount_{$index}" class="form-item {cycle values="odd-row,odd-row,odd-row,even-row,even-row,even-row"}"
                     style="border-bottom:1pt solid black;border-top:1pt dotted black;">
                   <td colspan="3">Sibling Discount<br>
                     <span class="description">keep empty discount text block for not giving any discount.</span></td>

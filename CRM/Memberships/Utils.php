@@ -66,10 +66,15 @@ class CRM_Memberships_Utils {
     //make it a unique list of contacts
     $contactIds = array_unique($contactIds);
 
+    $returnField = ["display_name"];
+    if (!empty($defaults['memberships_jcc_field'])) {
+      $returnField[] = $defaults['memberships_jcc_field'];
+    }
     // Get all related Contacts for this user
     foreach ($contactIds as $cid) {
       // only look for parent / child relationship
       $group_members[$cid] = civicrm_api("Contact", "getsingle", [
+          'return' => $returnField,
           'version' => 3,
           'contact_id' => $cid,
           'contact_is_deleted' => 0]
@@ -223,7 +228,7 @@ class CRM_Memberships_Utils {
     if ($payment && $isSuccessfull) {
       $template->assign('trxn_id', $payment['trxn_id']);
       $form->_status['trxn_id'] = $payment['trxn_id'];
-      self::createMemberships($payment['id'], $lineItems, $contactId, $params['contacts']);
+      self::createMemberships($payment['id'], $lineItems, $params['contacts']);
 
       // TODO: Not really happy that the confirmation email is unconditionally
       // dependent on a successful payment. This precludes free events. We should
@@ -345,7 +350,6 @@ class CRM_Memberships_Utils {
     }
 
     //create the contribution
-    CRM_Core_Error::debug_var('transact $params', $params + $additionalParams);
 
     $errorMsg = '';
     try {
@@ -399,34 +403,47 @@ class CRM_Memberships_Utils {
    *   Raw submitted data about the parties to be registered
    * @return mixed
    */
-  public static function createMemberships($memberContributionID, array &$lineItems, $registrant, array $contacts) {
+  public static function createMemberships($memberContributionID, array &$lineItems, array $contacts, $isPending = FALSE, $isPayLater = NULL, $additionalParams = []) {
     $isTest = FALSE;
     $numTerms = 1;
     // format the custom field to get used while processing usign CiviCRM core function, not using api here for
     // creating or renewing membership, as this function deal with all the things..
     $customFieldsFormatted = [];
+    $contactMembershipID = NULL;
     foreach ($lineItems['members'] as $cid => $data) {
       // get existing Membership record if exist
-      $getContactMembership = [
-        'version' => '3',
-        'contact_id' => $cid,
-        'membership_type_id' => $contacts[$cid]['membership_type_id'],
-        'check_permissions' => 0,
-      ];
+      if (!empty($contacts['membership_id'])) {
+        $contactMembershipID = $contacts['membership_id'];
+      }
+      else {
+        $getContactMembership = [
+          'version' => '3',
+          'contact_id' => $cid,
+          'membership_type_id' => $contacts[$cid]['membership_type_id'],
+          'check_permissions' => 0,
+        ];
 
-      $contactMembership = civicrm_api('Membership', 'get', $getContactMembership);
-      // Existing Membership ID
-      $contactMembershipID = $contactMembership['id'] ?? NULL;
+        $contactMembership = civicrm_api('Membership', 'get', $getContactMembership);
+        // Existing Membership ID
+        $contactMembershipID = $contactMembership['id'] ?? NULL;
+      }
       [$membership, $renewalMode, $dates,] = CRM_Member_BAO_Membership::processMembership(
         $cid, $contacts[$cid]['membership_type_id'], $isTest,
         date('YmdHis'), CRM_Core_Session::getLoggedInContactID() ?? NULL,
-        $customFieldsFormatted, $numTerms, $contactMembershipID, FALSE,
-        NULL, 'FOIS Membership Payment', NULL, [], [], NULL, []);
-      $lineItems['members'][$cid]['membershipId'] = $membership->id;
+        $customFieldsFormatted, $numTerms, $contactMembershipID, $isPending,
+        NULL, 'FOIS Membership Payment2', $isPayLater, $additionalParams,
+        [], NULL, []);
+      if (!empty($contactMembershipID)) {
+        $lineItems['members'][$cid]['membershipId'] = $contactMembershipID;
+      }
+      else {
+        $lineItems['members'][$cid]['membershipId'] = $membership->id;
+        $contactMembershipID = $membership->id;
+      }
 
       // create mapping between Team Dummy contribution id  and team membership id
       $result = civicrm_api3('MembershipPayment', 'create', [
-        'membership_id' => $membership->id,
+        'membership_id' => $contactMembershipID,
         'contribution_id' => $memberContributionID,
       ]);
     }
@@ -498,23 +515,23 @@ class CRM_Memberships_Utils {
          *
          * FIS-28 HACK
          */
-        $financialItemParams = $fiParams;
-        $financialItemParams['contact_id'] = $cid;
-        $financialItemParams['description'] = $lineItem['label'];
-        $financialItemParams['amount'] = $lineItem['line_total'];
-        $financialItemParams['entity_id'] = $line['id'];
+        if (!empty($financialItem['id'])) {
+          $financialItemParams = $fiParams;
+          $financialItemParams['contact_id'] = $cid;
+          $financialItemParams['description'] = $lineItem['label'];
+          $financialItemParams['amount'] = $lineItem['line_total'];
+          $financialItemParams['entity_id'] = $line['id'];
 
-        $financialItem = civicrm_api3('FinancialItem', 'create', $financialItemParams);
+          $financialItem = civicrm_api3('FinancialItem', 'create', $financialItemParams);
 
-        civicrm_api3('EntityFinancialTrxn', 'create', [
-          'entity_table' => "civicrm_financial_item",
-          'entity_id' => $financialItem['id'],
-          'financial_trxn_id' => $transaction['id'],
-          'amount' => $lineItem['line_total'],
-        ]);
-
+          civicrm_api3('EntityFinancialTrxn', 'create', [
+            'entity_table' => "civicrm_financial_item",
+            'entity_id' => $financialItem['id'],
+            'financial_trxn_id' => $transaction['id'],
+            'amount' => $lineItem['line_total'],
+          ]);
+        }
         /***** End FIS-28 HACK ****/
-
       }
     }
   }
