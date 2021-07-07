@@ -42,6 +42,18 @@
             $('.crm-memberships-group-form-block').insertAfter('#priceset-div');
             $('.crm-memberships-group-form-block').insertAfter('.amount_display-group');
 
+            cj('#pricevalue, #installments, #is_recur').change(function() {
+                var total_amount_tmp =  cj('input[name="total_amount"]').val();
+                if (total_amount_tmp && cj('#installments').val() && cj('#is_recur:checked').length) {
+                    //var installments = cj('#installments').val();
+                    var installments = cj('#installments :selected').val()
+                    var newAmount = total_amount_tmp / installments;
+                    var newAmountFormatted = CRM.formatMoney(newAmount, false, moneyFormat);
+                    display(newAmount);
+                }
+
+            });
+
         });
     </script>
 {/literal}

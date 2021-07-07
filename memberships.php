@@ -213,6 +213,11 @@ function memberships_civicrm_buildForm($formName, &$form) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
+      if ($form->_values['is_recur']) {
+        $installmentOption = ['2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6'];
+        $form->removeElement('installments');
+        $form->addElement('select', 'installments', NULL, $installmentOption, ['aria-label' => ts('installments')]);
+      }
     }
   }
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
@@ -235,13 +240,28 @@ function memberships_civicrm_buildForm($formName, &$form) {
 }
 
 function memberships_civicrm_postProcess($formName, &$form) {
-  if ($formName == "CRM_Contribute_Form_Contribution_Confirm") {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main") {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
-      // set the contribution id generated in transaction in session. To be used in other hook ,
-      // as $form->_contributionID no exist with $form object
-      $session = CRM_Core_Session::singleton();
-      $session->set('family_contributionID', $form->_contributionID);
+      if ($form->_values['is_recur']) {
+        $params = $form->getVar('_params');
+        $totalAmount = $form->get('amount');
+        if (!empty($params['is_recur']) && !empty($params['installments'])) {
+          $installmentAmount = $totalAmount / $params['installments'];
+          $params['amount'] = $installmentAmount;
+          $form->setVar('_params', $params);
+          $form->set('amount', $installmentAmount);
+        }
+      }
+    }
+    if ($formName == "CRM_Contribute_Form_Contribution_Confirm") {
+      $defaults = CRM_Memberships_Helper::getSettingsConfig();
+      if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+        // set the contribution id generated in transaction in session. To be used in other hook ,
+        // as $form->_contributionID no exist with $form object
+        $session = CRM_Core_Session::singleton();
+        $session->set('family_contributionID', $form->_contributionID);
+      }
     }
   }
 }
