@@ -11,10 +11,10 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
   const NUM_DISCOUNT = 6;
 
   public function buildQuickForm() {
-
+    $groups = ['' => '-- select --'] + CRM_Core_PseudoConstant::nestedGroup();
     $this->add('select', 'memberships_financial_type_id', 'Financial type',
       CRM_Contribute_BAO_Contribution::buildOptions('financial_type_id', 'search'),
-      TRUE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]
+      FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]
     );
 
     $this->add('select', 'memberships_relationships', 'Relationshiop type',
@@ -25,11 +25,10 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
     $this->add('select', 'memberships_membership_types', 'Membership Type',
       $membershipTypes, TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
 
-    $tags = ['' => '-- select --'] + CRM_Core_PseudoConstant::get('CRM_Core_DAO_EntityTag', 'tag_id', ['onlyActive' => FALSE]);
-    $this->add('select', 'memberships_tags_full_paid', 'Tag Contact on Full one time payment',
-      $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
-    $this->add('select', 'memberships_tags_partial_paid', 'Tags Contact on partial payment',
-      $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+    $this->add('select', 'memberships_group_full_paid', 'Tag Contact on Full one time payment',
+      $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+    $this->add('select', 'memberships_group_partial_paid', 'Tags Contact on partial payment',
+      $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
     $this->assign('membershipTypes', $membershipTypes);
 
@@ -38,29 +37,27 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       CRM_Memberships_Helper::getOperators();
 
     $attribute = ['class' => 'crm-select2', 'placeholder' => ts('- any -')];
-    $this->add('text', "jcc_discount", ts('JCC Discount'), ['size' => 20]);
-    $this->add('select', 'jcc_discount_type', ts('JCC Discount Type'),
-      [
-        1 => E::ts('Percent'),
-        2 => E::ts('Fixed Amount'),
-      ],
-      FALSE, $attribute);
-
-    $groups = ['' => '-- select --'] + CRM_Core_PseudoConstant::nestedGroup();
-    $this->add('select', 'specal_discount_group', ts('Special Discount'),
+    // <<<<
+    $this->add('select', 'memberships_special_discount_group', ts('Special Discount Group'),
       $groups, FALSE, $attribute);
-    $this->add('text', "specal_discount", ts('Specail Discount'), ['size' =>
+    $this->add('text', "memberships_special_discount_amount", ts('Special Discount Amount'), ['size' =>
       20]);
-    $this->add('select', 'specal_discount_type', ts('JCC Discount Type'),
+    $this->add('select', 'memberships_special_discount_type', ts('Special Discount Type'),
       [
         1 => E::ts('Percent'),
         2 => E::ts('Fixed Amount'),
       ],
       FALSE, $attribute);
 
-    $this->add('select', 'financial_discount_group', ts('Financial assistance/discount'),
+    $this->add('select', 'memberships_financial_discount_group', ts('Financial assistance/discount'),
       $groups, FALSE, $attribute);
+    $this->add('select', "memberships_financial_discount_group_discount_amount",
+      "Field for Amount",
+      $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+    $this->add('select', "memberships_financial_discount_group_discount_type", "Field for Discount Type",
+      $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
+    //    ---
     $contributionPage = CRM_Contribute_PseudoConstant::contributionPage();
     $this->add('select', 'memberships_contribution_page_id', ts('Online Contribution Page'),
       $contributionPage, FALSE, $attribute + ['multiple' => 'multiple']);
@@ -97,10 +94,12 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_3]", ts('Sibling 3'), ['size' => 5]);
           $this->add('text', "memberships_type_rule[$membershipTypeID][$i][sibling_4]", ts('Sibling 4'), ['size' => 5]);
         }
+        /*
         $this->add('select', "memberships_type_rule[$membershipTypeID][field]", "CiviCRM Field", $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
         $this->add('select', "memberships_type_rule[$membershipTypeID][operator]", "Operator", $operators, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
         $this->add('text', "memberships_type_rule[$membershipTypeID][condition]", 'Conitional Value', ['size' => 20]);
+        */
 
       }
     }

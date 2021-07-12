@@ -150,9 +150,24 @@ function memberships_civicrm_themes(&$themes) {
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_preProcess
  */
-//function memberships_civicrm_preProcess($formName, &$form) {
-//
-//}
+function memberships_civicrm_preProcess($formName, &$form) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main") {
+    $session = CRM_Core_Session::singleton();
+    // set default session values
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      $session = CRM_Core_Session::singleton();
+      $session->set('membershipTobWithContact', []);
+      $session->set('otherDiscounts', []);
+      $session->set('originalTotalAmount', '');
+      $session->set('membership_custom_signup', TRUE);
+      $session->set('membership_custom_signup_page', $form->getVar('_id'));
+    }
+    else {
+      $session->set('membership_custom_signup', FALSE);
+    }
+  }
+}
 
 /**
  * Implements hook_civicrm_navigationMenu().
@@ -174,23 +189,43 @@ function memberships_civicrm_navigationMenu(&$menu) {
 function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
   if (($pageType == "contribution" || $pageType = 'membership')) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    // if this page is part of custom setup then prcoess it.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
       $formName = get_class($form);
       if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
         $currentContactID = $form->getLoggedInUserContactID();
+        // get related contact of logged in user based on relationship type
+        // configured on setting pagg
         $allRelatedContact = CRM_Memberships_Utils::relatedContactsListing($form);
+        // get contact having membership records
         $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact);
+        $_values = $form->getVar('_values');
+
+        // check parent custom field to JCC Discounted Fee.
         $isJccMember = FALSE;
+        $pageFinancialTypeID = $_values['financial_type_id'];
         if (!empty($defaults['memberships_jcc_field']) && !empty($allRelatedContact[$currentContactID][$defaults['memberships_jcc_field']])) {
           $isJccMember = TRUE;
         }
-        $calculatedAmount = CRM_Memberships_Helper::prepareMemberList
-        ($currentContactID, $membershipTobWithContact, $isJccMember);
+        [$calculatedAmount, $originalTotalAmount, $otherDiscount] =
+          CRM_Memberships_Helper::prepareMemberList
+          ($currentContactID, $membershipTobWithContact, $isJccMember,
+            $pageFinancialTypeID);
+
+        // get value to form and session to recall these value on different pages..
+        $session = CRM_Core_Session::singleton();
         $form->assign('membershipTobWithContact', $membershipTobWithContact);
         $form->setVar('processMembershipRecord', $membershipTobWithContact);
-        $session = CRM_Core_Session::singleton();
         $session->set('membershipTobWithContact', $membershipTobWithContact);
+
+        $form->assign('otherDiscounts', $otherDiscount);
+        $form->setVar('otherDiscounts', $otherDiscount);
+        $session->set('otherDiscounts', $otherDiscount);
+
+        $form->assign('originalTotalAmount', $originalTotalAmount);
+        $session->set('originalTotalAmount', $originalTotalAmount);
         $form->assign('total_amount', $calculatedAmount);
+        // update the fee amount based on different discount..
         foreach ($amount as $fee_id => &$fee) {
           if (!is_array($fee['options'])) {
             continue;
@@ -210,7 +245,17 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
 
 function memberships_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Main") {
+    $defaultsCard = [];
+    $defaultsCard['credit_card_number'] = '4111111111111111';
+    $defaultsCard['cvv2'] = '111';
+    $defaultsCard['credit_card_exp_date']['M'] = '5';
+    $defaultsCard['credit_card_exp_date']['Y'] = '2024';
+    $defaultsCard['credit_card_type'] = 'Visa';
+    $form->setDefaults($defaultsCard);
+
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    // if recurring setting enabled then show drop down list instead of text
+    // field to defined number of installment.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
       if ($form->_values['is_recur']) {
@@ -224,12 +269,17 @@ function memberships_civicrm_buildForm($formName, &$form) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
       $session = CRM_Core_Session::singleton();
+      // Get the value from sesson and show on confirm and thank you page for
+      // table listing of children.
       $membershipTobWithContact = $session->get('membershipTobWithContact');
       $form->assign('membershipTobWithContact', $membershipTobWithContact);
+      $form->assign('otherDiscounts', $session->get('otherDiscounts'));
+      $form->assign('originalTotalAmount', $session->get('originalTotalAmount'));
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
 
       if ($formName == "CRM_Contribute_Form_Contribution_ThankYou") {
         $session = CRM_Core_Session::singleton();
+        // Process the Memebership once contribution is processed.
         $familyContributionID = $session->get('family_contributionID');
         if (!empty($familyContributionID)) {
           CRM_Memberships_Helper::processMembership($familyContributionID, $membershipTobWithContact);
@@ -246,6 +296,7 @@ function memberships_civicrm_postProcess($formName, &$form) {
       if ($form->_values['is_recur']) {
         $params = $form->getVar('_params');
         $totalAmount = $form->get('amount');
+        // update the processing amount if recurring payment is enabled.
         if (!empty($params['is_recur']) && !empty($params['installments'])) {
           $installmentAmount = $totalAmount / $params['installments'];
           $params['amount'] = $installmentAmount;
@@ -254,13 +305,55 @@ function memberships_civicrm_postProcess($formName, &$form) {
         }
       }
     }
-    if ($formName == "CRM_Contribute_Form_Contribution_Confirm") {
+  }
+  elseif ($formName == "CRM_Contribute_Form_Contribution_Confirm") {
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      // set the contribution id generated in transaction in session. To be used in other hook ,
+      // as $form->_contributionID no exist with $form object
+      $session = CRM_Core_Session::singleton();
+      CRM_Core_Error::debug_var('Confirm $form->_contributionID', $form->_contributionID);
+      $session->set('family_contributionID', $form->_contributionID);
+    }
+  }
+}
+
+function memberships_civicrm_pre($op, $objectName, $objectId, &$objectRef ) {
+  if ($objectName == 'Contribution') {
+    $session = CRM_Core_Session::singleton();
+    if ($session->get('membership_custom_signup')) {
       $defaults = CRM_Memberships_Helper::getSettingsConfig();
-      if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
-        // set the contribution id generated in transaction in session. To be used in other hook ,
-        // as $form->_contributionID no exist with $form object
-        $session = CRM_Core_Session::singleton();
-        $session->set('family_contributionID', $form->_contributionID);
+      // skip default line item , otherwise total amount on line item is more
+      // than paid amount.
+      if (in_array($session->get('membership_custom_signup_page'), $defaults['memberships_contribution_page_id'])) {
+        unset($objectRef['line_item']);
+        $objectRef['skipLineItem'] = TRUE;
+      }
+    }
+  }
+}
+
+function memberships_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
+  if ($op != 'delete' && $objectName == 'Contribution') {
+    $result = civicrm_api3('Contribution', 'getsingle', [
+      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'contact_id', 'contribution_recur_id', 'contribution_page_id'],
+      'id' => $objectId,
+    ]);
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
+      // Add contact of group if payment is partially paid.
+      if ($result['contribution_status'] == 'Completed' && !empty($result['contribution_recur_id']) && !empty($defaults['memberships_group_partial_paid'])) {
+        civicrm_api3('GroupContact', 'create', [
+          'contact_id' => $result['contact_id'],
+          'group_id' => $defaults['memberships_group_partial_paid'],
+        ]);
+      }
+      elseif (!empty($defaults['memberships_group_full_paid']) && $result['contribution_status'] == 'Completed') {
+        // else add contact to Fully paid group.
+        civicrm_api3('GroupContact', 'create', [
+          'contact_id' => $result['contact_id'],
+          'group_id' => $defaults['memberships_group_full_paid'],
+        ]);
       }
     }
   }

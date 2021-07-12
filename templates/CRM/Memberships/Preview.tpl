@@ -29,6 +29,24 @@
 
             </tr>
         {/foreach}
+        {if $originalTotalAmount && $otherDiscounts}
+        <tr class="{cycle values="odd-row,even-row"}">
+            <td colspan="3">Memberhsip Fee Sub Total</td><td>{$originalTotalAmount|crmMoney}</td>
+        </tr>
+        {/if}
+        {foreach from=$otherDiscounts item=otherDiscount}
+            <tr class="{cycle values="odd-row,even-row"}">
+                <td>-</td>
+                <td>{$otherDiscount.label}</td>
+                <td>
+                    {$otherDiscount.amount|crmMoney}
+                </td>
+                <td>
+                    -
+                </td>
+
+            </tr>
+        {/foreach}
         {if $total_amount}
         <tr class="{cycle values="odd-row,even-row"}">
             <td colspan="3">Total</td><td>{$total_amount|crmMoney}</td>

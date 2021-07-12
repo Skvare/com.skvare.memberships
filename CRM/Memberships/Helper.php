@@ -254,10 +254,6 @@ class CRM_Memberships_Helper {
   public static function getMembershipTobeProcessed($allRelatedContact) {
     $membershipContact = [];
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
-    $returnField = ["display_name"];
-    if (!empty($defaults['memberships_jcc_field'])) {
-      $returnField[] = $defaults['memberships_jcc_field'];
-    }
     $params = [
       'sequential' => 1,
       'options' => ['limit' => 1],
@@ -283,7 +279,8 @@ class CRM_Memberships_Helper {
 
   public static function prepareMemberList($currentUser,
                                            &$membershipTobWithContact,
-                                           $isJccMember) {
+                                           $isJccMember = FALSE,
+                                           $pageFinancialTypeID = '') {
     $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $totalAmount = 0;
     $childNumber = 0;
@@ -303,17 +300,79 @@ class CRM_Memberships_Helper {
       $details['discount'] = $discountAmount;
       $details['discount_name'] = $discountName;
     }
+    $defaultsConfig = CRM_Memberships_Helper::getSettingsConfig();
+    $returnField = ["group"];
+    if (!empty($defaultsConfig['memberships_financial_discount_group_discount_amount'])) {
+      $returnField[] = $defaultsConfig['memberships_financial_discount_group_discount_amount'];
+      $returnField[] = $defaultsConfig['memberships_financial_discount_group_discount_type'];
+    }
+    $contactResult = civicrm_api3('Contact', 'getsingle', [
+      'return' => $returnField,
+      'id' => $currentUser,
+    ]);
 
-    return $totalAmount;
+    $groupContact = [];
+    if (!empty($contactResult['groups'])) {
+      $groupContact = explode(',', $contactResult['groups']);
+    }
+
+    $originalTotalAmount = $totalAmount;
+    $discountOther = [];
+    if (!empty($defaultsConfig['memberships_financial_discount_group'])
+      && !empty($defaultsConfig['memberships_financial_discount_group_discount_amount'])
+      && !empty($defaultsConfig['memberships_financial_discount_group_discount_type'])
+    ) {
+      if (in_array($defaultsConfig['memberships_financial_discount_group'], $groupContact) &&
+        !empty($contactResult[$defaultsConfig['memberships_financial_discount_group_discount_amount']]) &&
+        !empty($contactResult[$defaultsConfig['memberships_financial_discount_group_discount_type']])
+      ) {
+        $type = 1;
+        if ($contactResult[$defaultsConfig['memberships_financial_discount_group_discount_type']] == 'fixed_amount') {
+          $type = 2;
+        }
+        [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount
+        ($originalTotalAmount, $contactResult[$defaultsConfig['memberships_financial_discount_group_discount_amount']], $type, 'Financial Assistant Discount');
+        $discountOther['1']['amount'] = $discountAmount;
+        $discountOther['1']['label'] = $newLabel;
+        $discountOther['1']['entity_table'] = 'civicrm_contribution';
+        $discountOther['1']['financial_type_id'] = $pageFinancialTypeID;
+        $totalAmount = $totalAmount + $discountAmount;
+      }
+    }
+
+    if (!empty($defaultsConfig['memberships_special_discount_group'])
+      && !empty($defaultsConfig['memberships_special_discount_amount'])
+      && !empty($defaultsConfig['memberships_special_discount_type'])
+    ) {
+      if (in_array($defaultsConfig['memberships_special_discount_group'], $groupContact)) {
+        $type = $defaultsConfig['memberships_special_discount_type'];
+        [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount($originalTotalAmount, $defaultsConfig['memberships_special_discount_amount'], $type, 'Special Discount');
+        $discountOther['2']['amount'] = $discountAmount;
+        $discountOther['2']['label'] = $newLabel;
+        $discountOther['2']['entity_table'] = 'civicrm_contribution';
+        $discountOther['2']['financial_type_id'] = $pageFinancialTypeID;
+        $totalAmount = $totalAmount + $discountAmount;
+      }
+    }
+
+    return [$totalAmount, $originalTotalAmount, $discountOther];
   }
 
-  public static function processMembership($familyContributionID,
-                                           $membershipTobWithContact) {
+  /**
+   * @param $familyContributionID
+   * @param $membershipTobWithContact
+   */
+  public static function processMembership($familyContributionID, $membershipTobWithContact) {
     $result = civicrm_api3('Contribution', 'getsingle', [
-      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'receive_date', 'currency'],
+      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'receive_date', 'currency', 'contact_id', 'contribution_recur_id'],
       'id' => $familyContributionID,
     ]);
-    if ($result['contribution_status'] == 'Completed' || ($result['contribution_status'] == 'Pending' && $result['is_pay_later'] == 1)) {
+
+    // create line item and membership record if either of one condition get
+    // meet.
+    if ($result['contribution_status'] == 'Completed' ||
+      ($result['contribution_status'] == 'Pending' && $result['is_pay_later'] == 1) ||
+      ($result['contribution_status'] == 'Pending' && !empty($result['contribution_recur_id']))) {
       $isPending = FALSE;
       $isPayLater = NULL;
       $additionalParams = [];
@@ -322,11 +381,55 @@ class CRM_Memberships_Helper {
         $isPayLater = 1;
         $additionalParams = ['skipStatusCal' => TRUE];
       }
+      elseif ($result['contribution_status'] == 'Pending' && !empty($result['contribution_recur_id'])) {
+        $isPending = TRUE;
+        $isPayLater = NULL;
+        $additionalParams = ['skipStatusCal' => TRUE];
+      }
+      // Prepare the line item array
       $lineItems = CRM_Memberships_Utils::makeLineItemArray2($membershipTobWithContact);
+      // Process membership based on payment status.
       CRM_Memberships_Utils::createMemberships($familyContributionID,
         $lineItems, $membershipTobWithContact, $isPending, $isPayLater, $additionalParams);
 
+      // Add line items
       CRM_Memberships_Utils::addLineItems($result, $lineItems);
+
     }
   }
+
+  /**
+   * Calculate either a monetary or percentage discount.
+   *
+   * @param $amount
+   * @param $discountAmount
+   * @param int $type
+   * @param string $label
+   * @param string $currency
+   * @return array
+   */
+  public static function _calc_discount($amount, $discountAmount, $type = 1, $label = '', $currency = 'USD') {
+    $fmt_main_amount = CRM_Utils_Money::format($amount, $currency);
+    if ($type == '2') {
+      $newamount = CRM_Utils_Rule::cleanMoney($amount) - CRM_Utils_Rule::cleanMoney($discountAmount);
+      $fmt_discount = CRM_Utils_Money::format($discountAmount, $currency);
+      $newlabel = $label . " ({$fmt_discount})";
+    }
+    else {
+      // Percentage
+      $newamount = $amount - ($amount * ($discountAmount / 100));
+      $newlabel = $label . " ({$discountAmount}% on {$fmt_main_amount})";
+    }
+
+    $newamount = round($newamount, 2);
+    // Return a formatted string for zero amount.
+    // @see http://issues.civicrm.org/jira/browse/CRM-12278
+    if ($newamount <= 0) {
+      $newamount = '0.00';
+    }
+    $discountAmount = $newamount - $amount;
+
+    return [$newamount, $discountAmount, $newlabel];
+  }
+
 }

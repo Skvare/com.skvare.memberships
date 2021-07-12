@@ -24,7 +24,6 @@ class CRM_Memberships_Utils {
     $relationships = $defaults['memberships_relationships'];
     $rab = [];
     $rba = [];
-    //echo '<pre>';print_r($relationships);echo '</pre>';
     foreach ($relationships as $r) {
       @ list($rType, $dir) = explode("_", $r, 2);
       if ($dir == NULL) {
@@ -213,7 +212,6 @@ class CRM_Memberships_Utils {
 
   public static function processForm(&$form, $params) {
     $contactId = CRM_Core_Session::getLoggedInContactID();
-    //echo '<pre>$params####-----';print_r($params);echo '</pre>';
 
     if (!$contactId) {
       throw new API_Exception("You do not have permission to access this api", 1);
@@ -442,10 +440,13 @@ class CRM_Memberships_Utils {
       }
 
       // create mapping between Team Dummy contribution id  and team membership id
-      $result = civicrm_api3('MembershipPayment', 'create', [
-        'membership_id' => $contactMembershipID,
-        'contribution_id' => $memberContributionID,
-      ]);
+      $membership_payment = civicrm_api('MembershipPayment', 'get', ['version' => 3, 'contribution_id' => $memberContributionID, 'membership_id' => $contactMembershipID]);
+      if (empty($membership_payment['values'])) {
+        $result = civicrm_api3('MembershipPayment', 'create', [
+          'membership_id' => $contactMembershipID,
+          'contribution_id' => $memberContributionID,
+        ]);
+      }
     }
   }
 
@@ -492,7 +493,6 @@ class CRM_Memberships_Utils {
 
     /****End FIS-28 HACK ****/
 
-
     foreach ($lineItems['members'] as $cid => $contact) {
       $defaultParams['entity_id'] = $contact['membershipId'];
       foreach ($contact['lineItems'] as $lineItem) {
@@ -515,7 +515,7 @@ class CRM_Memberships_Utils {
          *
          * FIS-28 HACK
          */
-        if (!empty($financialItem['id'])) {
+        if (!empty($transaction['id'])) {
           $financialItemParams = $fiParams;
           $financialItemParams['contact_id'] = $cid;
           $financialItemParams['description'] = $lineItem['label'];
@@ -534,8 +534,35 @@ class CRM_Memberships_Utils {
         /***** End FIS-28 HACK ****/
       }
     }
+
+    //  Discount Line item
+    foreach ($lineItems['otherDiscount'] as $otherDiscount) {
+      $defaultParams['entity_table'] = $otherDiscount['entity_table'];
+      $params = array_merge($defaultParams, $otherDiscount);
+      $line = civicrm_api3('LineItem', 'create', $params);
+      if (!empty($transaction['id'])) {
+        $financialItemParams = $fiParams;
+        $financialItemParams['contact_id'] = $contribution['contact_id'];
+        $financialItemParams['description'] = $otherDiscount['label'];
+        $financialItemParams['amount'] = $otherDiscount['line_total'];
+        $financialItemParams['entity_id'] = $line['id'];
+
+        $financialItem = civicrm_api3('FinancialItem', 'create', $financialItemParams);
+
+        civicrm_api3('EntityFinancialTrxn', 'create', [
+          'entity_table' => "civicrm_financial_item",
+          'entity_id' => $financialItem['id'],
+          'financial_trxn_id' => $transaction['id'],
+          'amount' => $otherDiscount['line_total'],
+        ]);
+      }
+    }
   }
 
+  /**
+   * @param $contacts
+   * @return array
+   */
   public static function makeLineItemArray2($contacts) {
     $result = civicrm_api3('PriceField', 'get', [
       'sequential' => 1,
@@ -552,8 +579,7 @@ class CRM_Memberships_Utils {
     ]);
 
     $priceFieldsContribution = reset($resultContribution['values']['0']['api.PriceFieldValue.get']['values']);
-    //echo '<pre>$priceFieldsContribution####-----';print_r($priceFieldsContribution);echo '</pre>';
-    //exit;
+
     $total = 0;
     foreach ($contacts as $cid => &$contact) {
       //fetch the display name because it may have been updated
@@ -575,7 +601,7 @@ class CRM_Memberships_Utils {
           $item['0']['line_total'] = $contact['fee_amount'];
           $item['0']['label'] = "{$displayName}: Membership - {$priceField['label']}";
 
-          if (false && !empty($contact['fee_amount_sibling'])) {
+          if (FALSE && !empty($contact['fee_amount_sibling'])) {
             $item['1'] = [];
             $item['1']['qty'] = 1;
             $item['1']['financial_type_id'] = $priceFieldDetails['financial_type_id'];
@@ -587,16 +613,27 @@ class CRM_Memberships_Utils {
           }
           $details['lineItems'] = $item;
           $subTotal += $contact['fee_amount'];
-          //$subTotal += $contact['fee_amount_sibling'];
         }
       }
       $details['subtotal'] = $subTotal;
       $subTotals[$cid] = $details;
       $total += $subTotal;
     }
+    $session = CRM_Core_Session::singleton();
+    $otherDiscounts = $session->get('otherDiscounts');
+    $itemOther = [];
+    foreach ($otherDiscounts as $index => $otherDiscount) {
+      $itemOther[$index] = [];
+      $itemOther[$index]['qty'] = 1;
+      $itemOther[$index]['financial_type_id'] = $priceFieldDetails['financial_type_id'];
+      $itemOther[$index]['unit_price'] = $otherDiscount['amount'];
+      $itemOther[$index]['line_total'] = $otherDiscount['amount'];
+      $itemOther[$index]['label'] = $otherDiscount['label'];
+      $itemOther[$index]['entity_table'] = $otherDiscount['entity_table'];
+      $total = $total + $otherDiscount['amount'];
+    }
 
-    //exit;
-    return ["total" => $total, "members" => $subTotals];
+    return ["total" => $total, "members" => $subTotals, 'otherDiscount' => $itemOther];
   }
 
   /**
@@ -609,7 +646,6 @@ class CRM_Memberships_Utils {
   public static function makeLineItemArray($contacts) {
     $feesMetadata = self::getMembershipTypeFields($contacts);
     $priceFields = [];
-    //echo '<pre>$feesMetadata-----'; print_r($feesMetadata); echo '</pre>';
     foreach ($feesMetadata['fields'] as $field) {
       $details = [];
       $details['id'] = str_replace("price_", "", $field['name']);
