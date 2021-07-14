@@ -358,3 +358,32 @@ function memberships_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
     }
   }
 }
+
+/*
+ * Implementation of hook_civicrm_alterMailParams
+ */
+function memberships_civicrm_alterMailParams(&$params, $context) {
+  if ($context == 'messageTemplate') {
+    /*
+     // Use follwing html in online reciept template above line item element
+      {if $custom_membership_signup and $membershipDetails}
+         <tr><td colspan="2">{$membershipDetails}</td></tr>
+      {/if}
+     */
+    if (($params['groupName'] == 'msg_tpl_workflow_contribution' && $params['valueName'] == 'contribution_online_receipt')) {
+      $defaults = CRM_Memberships_Helper::getSettingsConfig();
+      if (in_array($params['tplParams']['contributionPageId'], $defaults['memberships_contribution_page_id'])) {
+        $session = CRM_Core_Session::singleton();
+        if ($session->get('membershipTobWithContact')) {
+          $template = CRM_Core_Smarty::singleton();
+          $template->assign('membershipTobWithContact', $session->get('membershipTobWithContact'));
+          $template->assign('otherDiscounts', $session->get('otherDiscounts'));
+          $template->assign('originalTotalAmount', $session->get('originalTotalAmount'));
+          $membershipDetails = $template->fetch('CRM/Memberships/Preview.tpl');
+          $params['tplParams']['membershipDetails'] = $membershipDetails;
+          $params['tplParams']['custom_membership_signup'] = TRUE;
+        }
+      }
+    }
+  }
+}
