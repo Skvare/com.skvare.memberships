@@ -59,7 +59,7 @@
         CRM.$(function($) {
             $('.crm-memberships-group-form-block').insertAfter('#priceset-div');
             $('.crm-memberships-group-form-block').insertAfter('.amount_display-group');
-
+            $('#priceset-div').hide();
             cj('#pricevalue, #installments, #is_recur').change(function() {
                 var total_amount_tmp =  cj('input[name="total_amount"]').val();
                 if (total_amount_tmp && cj('#installments').val() && cj('#is_recur:checked').length) {
