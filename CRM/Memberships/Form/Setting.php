@@ -12,6 +12,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
 
   public function buildQuickForm() {
     $groups = ['' => '-- select --'] + CRM_Core_PseudoConstant::nestedGroup();
+    $tags = ['' => '-- select --'] + CRM_Core_PseudoConstant::get('CRM_Core_DAO_EntityTag', 'tag_id', ['onlyActive' => FALSE]);
     $this->add('select', 'memberships_financial_type_id', 'Financial type',
       CRM_Contribute_BAO_Contribution::buildOptions('financial_type_id', 'search'),
       FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]
@@ -28,6 +29,11 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
     $this->add('select', 'memberships_group_full_paid', 'Add Contact to Group on Full one time payment',
       $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
     $this->add('select', 'memberships_group_partial_paid', 'Add Contact to Group on partial payment',
+      $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+
+    $this->add('select', 'memberships_tag_full_paid', 'Tag Contact on Full one time payment',
+      $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+    $this->add('select', 'memberships_tag_partial_paid', 'Tag Contact on partial payment',
       $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
     $this->assign('membershipTypes', $membershipTypes);

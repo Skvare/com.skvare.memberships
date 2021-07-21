@@ -52,6 +52,20 @@
       </td>
     </tr>
     <tr>
+      <td class="label">{$form.memberships_tag_full_paid.label}</td>
+      <td>
+          {$form.memberships_tag_full_paid.html}<br/>
+        <div class="description">Assign Tag to contact on full payment, this tag are required to register for an event.</div>
+      </td>
+    </tr>
+    <tr>
+      <td class="label">{$form.memberships_tag_partial_paid.label}</td>
+      <td>
+          {$form.memberships_tag_partial_paid.html}<br/>
+        <div class="description">Assign Tag to contact on partial payment, this tag are required to register for an event.</div>
+      </td>
+    </tr>
+    <tr>
       <td class="label">{$form.memberships_special_discount_group.label}</td>
       <td>
           {$form.memberships_special_discount_group.html} - {$form.memberships_special_discount_amount.html} - {$form.memberships_special_discount_type.html}<br/>
