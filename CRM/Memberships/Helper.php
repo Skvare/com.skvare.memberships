@@ -258,6 +258,9 @@ class CRM_Memberships_Helper {
       'sequential' => 1,
       'options' => ['limit' => 1],
     ];
+    if (!empty($defaults['memberships_membership_types'])) {
+      $params['membership_type_id'] = ['IN' => $defaults['memberships_membership_types']];
+    }
     if (!empty($defaults['memberships_type_field']) && !empty($defaults['memberships_type_operator']) && !empty($defaults['memberships_type_condition'])) {
       $params[$defaults['memberships_type_field']] = $defaults['memberships_type_condition'];
     }
