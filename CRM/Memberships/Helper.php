@@ -331,7 +331,7 @@ class CRM_Memberships_Helper {
           $type = 2;
         }
         [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount
-        ($originalTotalAmount, $contactResult[$defaultsConfig['memberships_financial_discount_group_discount_amount']], $type, 'Financial Assistant Discount');
+        ($originalTotalAmount, $contactResult[$defaultsConfig['memberships_financial_discount_group_discount_amount']], $type, 'Approved Financial Aid');
         $discountOther['1']['amount'] = $discountAmount;
         $discountOther['1']['label'] = $newLabel;
         $discountOther['1']['entity_table'] = 'civicrm_contribution';
@@ -346,7 +346,7 @@ class CRM_Memberships_Helper {
     ) {
       if (in_array($defaultsConfig['memberships_special_discount_group'], $groupContact)) {
         $type = $defaultsConfig['memberships_special_discount_type'];
-        [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount($originalTotalAmount, $defaultsConfig['memberships_special_discount_amount'], $type, 'Special Discount');
+        [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount($originalTotalAmount, $defaultsConfig['memberships_special_discount_amount'], $type, 'Subsidy');
         $discountOther['2']['amount'] = $discountAmount;
         $discountOther['2']['label'] = $newLabel;
         $discountOther['2']['entity_table'] = 'civicrm_contribution';

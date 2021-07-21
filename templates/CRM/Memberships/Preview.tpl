@@ -2,8 +2,8 @@
     <table class="selector">
         <tr class="columnheader">
             <th>{ts}Contact Name{/ts}</th>
-            <th>{ts}Membershp Type{/ts}</th>
-            <th>{ts}Discount?{/ts}</th>
+            <th>{ts}Item{/ts}</th>
+            <th>{ts}Rate{/ts}</th>
             <th>{ts}Membership Fee{/ts}</th>
         </tr>
         {counter start=0 skip=1 print=false}
@@ -17,21 +17,18 @@
 
                     {if $contact.fee_amount_sibling}
                         <br/>
-                        Sibling : {$contact.fee_amount_sibling|crmMoney}
+                        Sibling Discount : {$contact.fee_amount_sibling|crmMoney}
                     {/if}
                 </td>
                 <td>
                     {$contact.fee_amount|crmMoney}
-                    {if $contact.discount}
-                        &nbsp;({$contact.original_amount|crmMoney})
-                    {/if}
                 </td>
 
             </tr>
         {/foreach}
         {if $originalTotalAmount && $otherDiscounts}
         <tr class="{cycle values="odd-row,even-row"}">
-            <td colspan="3">Memberhsip Fee Sub Total</td><td>{$originalTotalAmount|crmMoney}</td>
+            <td colspan="3">Additional Discounts</td><td>{$originalTotalAmount|crmMoney}</td>
         </tr>
         {/if}
         {foreach from=$otherDiscounts item=otherDiscount}
