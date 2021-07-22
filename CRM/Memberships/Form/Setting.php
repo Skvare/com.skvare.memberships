@@ -18,7 +18,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]
     );
 
-    $this->add('select', 'memberships_relationships', 'Relationshiop type',
+    $this->add('select', 'memberships_relationships', 'Relationship type',
       CRM_Memberships_Helper::relationshipTypes(),
       TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
 
@@ -61,6 +61,10 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       "Field for Amount",
       $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
     $this->add('select', "memberships_financial_discount_group_discount_type", "Field for Discount Type",
+      $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+
+    $this->add('select', "memberships_siblings_number",
+      "Sort Child using Siblings Number Field",
       $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
     //    ---

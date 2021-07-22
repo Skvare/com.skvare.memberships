@@ -111,6 +111,13 @@
           </table>
       </td>
     </tr>
+    <tr>
+      <td class="label">{$form.memberships_siblings_number.label}</td>
+      <td>
+          {$form.memberships_siblings_number.html}
+        <div class="description">Use Siblings Number field to show Child in order to get discount benifits.</div>
+      </td>
+    </tr>
       {foreach from=$membershipTypes key=type_id item=label}
         {if $type_id|in_array:$memberships_membership_types}
         <tr><td colspan="2">

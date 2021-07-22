@@ -69,6 +69,9 @@ class CRM_Memberships_Utils {
     if (!empty($defaults['memberships_jcc_field'])) {
       $returnField[] = $defaults['memberships_jcc_field'];
     }
+    if (!empty($defaults['memberships_siblings_number'])) {
+      $returnField[] = $defaults['memberships_siblings_number'];
+    }
     // Get all related Contacts for this user
     foreach ($contactIds as $cid) {
       // only look for parent / child relationship
@@ -98,7 +101,28 @@ class CRM_Memberships_Utils {
       else {
         $contactDetails['membershipstatus'] = "<div1><span class='badge badge-warning'> Non Member</span></div1>";
       }
+    }
+    if (!empty($defaults['memberships_siblings_number'])) {
+      $siblingsNumberOrder = [];
+      $normalOrder = [];
+      foreach ($group_members as $contactID => &$contactDetails) {
+        if (!empty($contactDetails[$defaults['memberships_siblings_number']])) {
+          $siblingsNumberOrder[$contactID] = $contactDetails[$defaults['memberships_siblings_number']];
+        }
+        else {
+          $normalOrder[$contactID] = '';
+        }
+      }
+      asort($siblingsNumberOrder);
+      $siblingsNumberOrder = $siblingsNumberOrder + $normalOrder;
+      $group_members_sorted = [];
+      if (!empty($siblingsNumberOrder)) {
+        foreach ($siblingsNumberOrder as $contactID => $index) {
+          $group_members_sorted[$contactID] = $group_members[$contactID];
+        }
 
+        return $group_members_sorted;
+      }
     }
 
     return $group_members;
