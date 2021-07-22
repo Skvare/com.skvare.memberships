@@ -70,7 +70,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
     //    ---
     $contributionPage = CRM_Contribute_PseudoConstant::contributionPage();
     $this->add('select', 'memberships_contribution_page_id', ts('Online Contribution Page'),
-      $contributionPage, FALSE, $attribute + ['multiple' => 'multiple']);
+      $contributionPage, TRUE, $attribute + ['multiple' => 'multiple']);
     $this->add('select', "memberships_jcc_field", "JCC Field Name",
       $civicrmFields, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
