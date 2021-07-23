@@ -75,14 +75,19 @@ class CRM_Memberships_Utils {
     // Get all related Contacts for this user
     foreach ($contactIds as $cid) {
       // only look for parent / child relationship
-      $group_members[$cid] = civicrm_api("Contact", "getsingle", [
-          'return' => $returnField,
-          'version' => 3,
-          'contact_id' => $cid,
-          'contact_is_deleted' => 0]
-      );
-      if ($userID == $cid) {
-        $group_members[$cid]['display_name'] .= ' (you)';
+      try {
+        $contactData = civicrm_api("Contact", "getsingle", [
+            'return' => $returnField,
+            'version' => 3,
+            'id' => $cid,
+            'is_deleted' => 0]
+        );
+        $group_members[$cid] = $contactData;
+        if ($userID == $cid) {
+          $group_members[$cid]['display_name'] .= ' (you)';
+        }
+      }
+      catch (CiviCRM_API3_Exception $exception) {
       }
     }
     foreach ($group_members as $contactID => &$contactDetails) {
