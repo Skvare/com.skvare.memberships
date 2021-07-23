@@ -76,13 +76,15 @@ class CRM_Memberships_Utils {
     foreach ($contactIds as $cid) {
       // only look for parent / child relationship
       try {
-        $contactData = civicrm_api("Contact", "getsingle", [
+        $contactDataResult = civicrm_api("Contact", "get", [
             'return' => $returnField,
             'version' => 3,
             'id' => $cid,
             'is_deleted' => 0]
         );
-        $group_members[$cid] = $contactData;
+        if (!empty($contactDataResult['values'])) {
+          $group_members[$cid] = $contactDataResult['values'][$cid];
+        }
         if ($userID == $cid) {
           $group_members[$cid]['display_name'] .= ' (you)';
         }
