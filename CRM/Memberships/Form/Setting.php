@@ -23,8 +23,13 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
 
     $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
+    $membershipStatus = CRM_Member_PseudoConstant::membershipStatus();
     $this->add('select', 'memberships_membership_types', 'Membership Type',
       $membershipTypes, TRUE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
+
+    $this->add('select', 'memberships_membership_allowed_status', 'Filter on Membership Status',
+      $membershipStatus, FALSE, ['class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -')]);
+
 
     $this->add('select', 'memberships_group_full_paid', 'Add Contact to Group on Full one time payment',
       $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);

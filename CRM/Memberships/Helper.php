@@ -264,6 +264,9 @@ class CRM_Memberships_Helper {
     if (!empty($defaults['memberships_type_field']) && !empty($defaults['memberships_type_operator']) && !empty($defaults['memberships_type_condition'])) {
       $params[$defaults['memberships_type_field']] = $defaults['memberships_type_condition'];
     }
+    if (!empty($defaults['memberships_membership_allowed_status'])) {
+      $params['status_id'] = ['IN' => $defaults['memberships_membership_allowed_status']];
+    }
 
     foreach ($allRelatedContact as $cid => $contactDetails) {
       $params['contact_id'] = $cid;

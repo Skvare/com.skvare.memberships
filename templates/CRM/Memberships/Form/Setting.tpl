@@ -98,6 +98,13 @@
       </td>
     </tr>
     <tr>
+      <td class="label">{$form.memberships_membership_allowed_status.label}</td>
+      <td>
+          {$form.memberships_membership_allowed_status.html}<br/>
+        <div class="description">Fetch Membership Record with specifc status to for signup</div>
+      </td>
+    </tr>
+    <tr>
       <td class="label">Membership Match Condition</td>
       <td>
           <table>
