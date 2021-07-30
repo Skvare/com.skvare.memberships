@@ -261,7 +261,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
       if ($form->_values['is_recur']) {
-        $installmentOption = ['2' => '2', '3' => '3', '4' => '4', '5' => '5', '6' => '6'];
+        $installmentOption = ['2' => '2', '3' => '3', '4' => '4'];
         $form->removeElement('installments');
         $form->addElement('select', 'installments', 'installments', $installmentOption, ['aria-label' => ts('installments')]);
         CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/RecuringHelp.tpl']);
