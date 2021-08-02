@@ -286,6 +286,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
         $familyContributionID = $session->get('family_contributionID');
         if (!empty($familyContributionID)) {
           CRM_Memberships_Helper::processMembership($familyContributionID, $membershipTobWithContact);
+          CRM_Memberships_Utils::addContactToGroupTag($familyContributionID);
         }
       }
     }
@@ -338,45 +339,7 @@ function memberships_civicrm_pre($op, $objectName, $objectId, &$objectRef ) {
 
 function memberships_civicrm_post( $op, $objectName, $objectId, &$objectRef ) {
   if ($op != 'delete' && $objectName == 'Contribution') {
-    $result = civicrm_api3('Contribution', 'getsingle', [
-      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'contact_id', 'contribution_recur_id', 'contribution_page_id'],
-      'id' => $objectId,
-    ]);
-    $defaults = CRM_Memberships_Helper::getSettingsConfig();
-    if (in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
-      // Add contact of group if payment is partially paid.
-      if ($result['contribution_status'] == 'Completed' && !empty($result['contribution_recur_id'])) {
-        if (!empty($defaults['memberships_group_partial_paid'])) {
-          civicrm_api3('GroupContact', 'create', [
-            'contact_id' => $result['contact_id'],
-            'group_id' => $defaults['memberships_group_partial_paid'],
-          ]);
-        }
-        if ($defaults['memberships_tag_partial_paid']) {
-          civicrm_api3('EntityTag', 'create', [
-            'entity_table' => 'civicrm_contact',
-            'entity_id' => $result['contact_id'],
-            'tag_id' => $defaults['memberships_tag_partial_paid'],
-          ]);
-        }
-      }
-      elseif ($result['contribution_status'] == 'Completed') {
-        if (!empty($defaults['memberships_group_full_paid'])) {
-          // else add contact to Fully paid group.
-          civicrm_api3('GroupContact', 'create', [
-            'contact_id' => $result['contact_id'],
-            'group_id' => $defaults['memberships_group_full_paid'],
-          ]);
-        }
-        if ($defaults['memberships_tag_full_paid']) {
-          civicrm_api3('EntityTag', 'create', [
-            'entity_table' => 'civicrm_contact',
-            'entity_id' => $result['contact_id'],
-            'tag_id' => $defaults['memberships_tag_full_paid'],
-          ]);
-        }
-      }
-    }
+    CRM_Memberships_Utils::addContactToGroupTag($objectId);
   }
 }
 

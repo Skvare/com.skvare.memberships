@@ -463,7 +463,7 @@ class CRM_Memberships_Utils {
         $cid, $contacts[$cid]['membership_type_id'], $isTest,
         date('YmdHis'), CRM_Core_Session::getLoggedInContactID() ?? NULL,
         $customFieldsFormatted, $numTerms, $contactMembershipID, $isPending,
-        NULL, 'FOIS Membership Payment2', $isPayLater, $additionalParams,
+        NULL, NULL, $isPayLater, $additionalParams,
         [], NULL, []);
       if (!empty($contactMembershipID)) {
         $lineItems['members'][$cid]['membershipId'] = $contactMembershipID;
@@ -840,5 +840,60 @@ class CRM_Memberships_Utils {
     }
 
     return $priceField;
+  }
+
+  public static function addContactToGroupTag($contributionID) {
+    $result = civicrm_api3('Contribution', 'getsingle', [
+      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'contact_id', 'contribution_recur_id', 'contribution_page_id'],
+      'id' => $contributionID,
+    ]);
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
+      $resultMembership = civicrm_api3('MembershipPayment', 'get', [
+        'sequential' => 1,
+        'return' => ["membership_id"],
+        'contribution_id' => $contributionID,
+      ]);
+      foreach ($resultMembership['values'] as $membershipDetails) {
+        $memberContactID = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $membershipDetails['membership_id'], 'contact_id', 'id');
+        // Add contact of group if payment is partially paid.
+        try {
+          if ($result['contribution_status'] == 'Completed' && !empty($result['contribution_recur_id'])) {
+            if (!empty($defaults['memberships_group_partial_paid'])) {
+              civicrm_api3('GroupContact', 'create', [
+                'contact_id' => $memberContactID,
+                'group_id' => $defaults['memberships_group_partial_paid'],
+              ]);
+            }
+            if (!empty($defaults['memberships_tag_partial_paid'])) {
+              civicrm_api3('EntityTag', 'create', [
+                'entity_table' => 'civicrm_contact',
+                'entity_id' => $memberContactID,
+                'tag_id' => $defaults['memberships_tag_partial_paid'],
+              ]);
+            }
+          }
+          elseif ($result['contribution_status'] == 'Completed') {
+            if (!empty($defaults['memberships_group_full_paid'])) {
+              // else add contact to Fully paid group.
+              $resultGroup = civicrm_api3('GroupContact', 'create', [
+                'contact_id' => $memberContactID,
+                'group_id' => $defaults['memberships_group_full_paid'],
+              ]);
+            }
+            if (!empty($defaults['memberships_tag_full_paid'])) {
+              $resultTag = civicrm_api3('EntityTag', 'create', [
+                'entity_table' => 'civicrm_contact',
+                'entity_id' => $memberContactID,
+                'tag_id' => $defaults['memberships_tag_full_paid'],
+              ]);
+            }
+          }
+        }
+        catch (CiviCRM_API3_Exception $exception) {
+
+        }
+      }
+    }
   }
 }

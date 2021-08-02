@@ -37,9 +37,9 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
       $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
     $this->add('select', 'memberships_tag_full_paid', 'Tag Contact on Full one time payment',
-      $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+      $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
     $this->add('select', 'memberships_tag_partial_paid', 'Tag Contact on partial payment',
-      $groups, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
+      $tags, FALSE, ['class' => 'crm-select2', 'placeholder' => ts('- any -')]);
 
     $this->assign('membershipTypes', $membershipTypes);
 
