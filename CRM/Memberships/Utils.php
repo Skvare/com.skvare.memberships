@@ -525,21 +525,11 @@ class CRM_Memberships_Utils {
    * @return array
    */
   public static function makeLineItemArray2($contacts) {
-    $result = civicrm_api3('PriceField', 'get', [
+    $resultPriceFields = civicrm_api3('PriceField', 'get', [
       'sequential' => 1,
       'price_set_id' => "default_membership_type_amount",
       'api.PriceFieldValue.get' => [],
     ]);
-
-    $priceFields = $result['values']['0']['api.PriceFieldValue.get']['values'];
-
-    $resultContribution = civicrm_api3('PriceField', 'get', [
-      'sequential' => 1,
-      'price_set_id' => "default_contribution_amount",
-      'api.PriceFieldValue.get' => [],
-    ]);
-
-    $priceFieldsContribution = reset($resultContribution['values']['0']['api.PriceFieldValue.get']['values']);
 
     $total = 0;
     foreach ($contacts as $cid => &$contact) {
@@ -549,31 +539,22 @@ class CRM_Memberships_Utils {
       $details = [];
       $details['lineItems'] = [];
 
-      foreach ($priceFields as $priceField) {
-        if ($priceField['membership_type_id'] == $contact['membership_type_id']) {
-          $priceFieldDetails = self::getPriceFees($contact['membership_type_id']);
-          $item = [];
-          $item['0'] = [];
-          $item['0']['qty'] = 1;
-          $item['0']['financial_type_id'] = $priceFieldDetails['financial_type_id'];
-          $item['0']['price_field_id'] = $priceFieldDetails['field_id'];
-          $item['0']['price_field_value_id'] = $priceFieldDetails['field_value_id'];
-          $item['0']['unit_price'] = $contact['fee_amount'];
-          $item['0']['line_total'] = $contact['fee_amount'];
-          $item['0']['label'] = "{$displayName}: Membership - {$priceField['label']}";
-
-          if (FALSE && !empty($contact['fee_amount_sibling'])) {
-            $item['1'] = [];
-            $item['1']['qty'] = 1;
-            $item['1']['financial_type_id'] = $priceFieldDetails['financial_type_id'];
-            $item['1']['price_field_id'] = $priceFieldsContribution['price_field_id'];
-            $item['1']['price_field_value_id'] = $priceFieldsContribution['id'];
-            $item['1']['unit_price'] = $contact['fee_amount_sibling'];
-            $item['1']['line_total'] = $contact['fee_amount_sibling'];
-            $item['1']['label'] = "{$displayName}: - Sibling Disount";
+      foreach ($resultPriceFields['values'] as $priceFields) {
+        foreach ($priceFields['api.PriceFieldValue.get']['values'] as $priceField) {
+          if ($priceField['membership_type_id'] == $contact['membership_type_id']) {
+            $priceFieldDetails = self::getPriceFees($contact['membership_type_id']);
+            $item = [];
+            $item['0'] = [];
+            $item['0']['qty'] = 1;
+            $item['0']['financial_type_id'] = $priceFieldDetails['financial_type_id'];
+            $item['0']['price_field_id'] = $priceFieldDetails['field_id'];
+            $item['0']['price_field_value_id'] = $priceFieldDetails['field_value_id'];
+            $item['0']['unit_price'] = $contact['fee_amount'];
+            $item['0']['line_total'] = $contact['fee_amount'];
+            $item['0']['label'] = "{$displayName}: Membership - {$priceField['label']}";
+            $details['lineItems'] = $item;
+            $subTotal += $contact['fee_amount'];
           }
-          $details['lineItems'] = $item;
-          $subTotal += $contact['fee_amount'];
         }
       }
       $details['subtotal'] = $subTotal;
