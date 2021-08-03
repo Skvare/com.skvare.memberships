@@ -465,13 +465,11 @@ class CRM_Memberships_Utils {
         $customFieldsFormatted, $numTerms, $contactMembershipID, $isPending,
         NULL, NULL, $isPayLater, $additionalParams,
         [], NULL, []);
-      if (!empty($contactMembershipID)) {
-        $lineItems['members'][$cid]['membershipId'] = $contactMembershipID;
-      }
-      else {
-        $lineItems['members'][$cid]['membershipId'] = $membership->id;
+      if (empty($contactMembershipID)) {
         $contactMembershipID = $membership->id;
       }
+
+      $lineItems['members'][$cid]['membershipId'] = $contactMembershipID;
 
       // create mapping between Team Dummy contribution id  and team membership id
       $membership_payment = civicrm_api('MembershipPayment', 'get', ['version' => 3, 'contribution_id' => $memberContributionID, 'membership_id' => $contactMembershipID]);
@@ -497,75 +495,20 @@ class CRM_Memberships_Utils {
       'entity_table' => "civicrm_membership",
       'contribution_id' => $contribution['id'],
     ];
+    $contributionIDs = ['id' => $contribution['id']];
+    $values = [];
+    $getContribution = CRM_Contribute_BAO_Contribution::getValues($contributionIDs, $values);
 
-    /**
-     * This block of code supports the creation of
-     * Financial items and EntityFinancialTrxn
-     *
-     * FIS-28 HACK
-     */
-
-    $transaction = NULL;
-    $transactions = civicrm_api3("Payment", "get", [
-      "contribution_id" => $contribution['id'],
-    ]);
-    foreach ($transactions['values'] as $trxn) {
-      if ($trxn['total_amount'] == $contribution['total_amount']) {
-        $transaction = $trxn;
-        break;
-      }
-    }
-
-    $fiParams = [
-      //'created_date' => $contribution['receive_date'],
-      'transaction_date' => $contribution['receive_date'],
-      'currency' => $contribution['currency'],
-      'entity_table' => "civicrm_line_item",
-      'status_id' => 1,
-      'financial_account_id' => $transaction['to_financial_account_id'],
-    ];
-
-    /****End FIS-28 HACK ****/
+    //add Account details
+    $contribution['contribution'] = $getContribution;
+    $contribution['skipLineItem'] = TRUE;
+    CRM_Contribute_BAO_Contribution::recordFinancialAccounts($contribution);
 
     foreach ($lineItems['members'] as $cid => $contact) {
       $defaultParams['entity_id'] = $contact['membershipId'];
       foreach ($contact['lineItems'] as $lineItem) {
-        $params = array_merge($defaultParams, $lineItem);
+        $params = array_merge($lineItem, $defaultParams);
         $line = civicrm_api3('LineItem', 'create', $params);
-
-        /**
-         * None of the following code SHOULD be necessary
-         * however, there are bugs in Contribution.transact
-         * see: civicrm/api/v3/contribution.php:350
-         * The entity transactions are not saved, so we have to create them manually.
-         *
-         * I followed the code and it doesn't look like there is any way to
-         * get the lineitem.create api to do this for us.
-         * So we are doing it manually here.
-         *
-         * Hopefully the Contribution.transact api will get fixed in future
-         * versions and we can remove this code.
-         * -NTL
-         *
-         * FIS-28 HACK
-         */
-        if (!empty($transaction['id'])) {
-          $financialItemParams = $fiParams;
-          $financialItemParams['contact_id'] = $cid;
-          $financialItemParams['description'] = $lineItem['label'];
-          $financialItemParams['amount'] = $lineItem['line_total'];
-          $financialItemParams['entity_id'] = $line['id'];
-
-          $financialItem = civicrm_api3('FinancialItem', 'create', $financialItemParams);
-
-          civicrm_api3('EntityFinancialTrxn', 'create', [
-            'entity_table' => "civicrm_financial_item",
-            'entity_id' => $financialItem['id'],
-            'financial_trxn_id' => $transaction['id'],
-            'amount' => $lineItem['line_total'],
-          ]);
-        }
-        /***** End FIS-28 HACK ****/
       }
     }
 
@@ -574,22 +517,6 @@ class CRM_Memberships_Utils {
       $defaultParams['entity_table'] = $otherDiscount['entity_table'];
       $params = array_merge($defaultParams, $otherDiscount);
       $line = civicrm_api3('LineItem', 'create', $params);
-      if (!empty($transaction['id'])) {
-        $financialItemParams = $fiParams;
-        $financialItemParams['contact_id'] = $contribution['contact_id'];
-        $financialItemParams['description'] = $otherDiscount['label'];
-        $financialItemParams['amount'] = $otherDiscount['line_total'];
-        $financialItemParams['entity_id'] = $line['id'];
-
-        $financialItem = civicrm_api3('FinancialItem', 'create', $financialItemParams);
-
-        civicrm_api3('EntityFinancialTrxn', 'create', [
-          'entity_table' => "civicrm_financial_item",
-          'entity_id' => $financialItem['id'],
-          'financial_trxn_id' => $transaction['id'],
-          'amount' => $otherDiscount['line_total'],
-        ]);
-      }
     }
   }
 
