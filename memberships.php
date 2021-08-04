@@ -207,6 +207,8 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         if (!empty($defaults['memberships_jcc_field']) && !empty($allRelatedContact[$currentContactID][$defaults['memberships_jcc_field']])) {
           $isJccMember = TRUE;
         }
+        unset($allRelatedContact[$currentContactID]);
+        unset($membershipTobWithContact[$currentContactID]);
         [$calculatedAmount, $originalTotalAmount, $otherDiscount] =
           CRM_Memberships_Helper::prepareMemberList
           ($currentContactID, $membershipTobWithContact, $isJccMember,

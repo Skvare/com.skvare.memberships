@@ -17,7 +17,7 @@ class CRM_Memberships_Utils {
     // Get all Contact Details for logged in user
     $civi_primary_contact = civicrm_api('Contact', 'getsingle', $primary_contact_params);
     $civi_primary_contact['display_name'] .= ' (you)';
-    //$group_members[$userID] = $civi_primary_contact;
+    $group_members[$userID] = $civi_primary_contact;
 
     //---
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
@@ -38,7 +38,7 @@ class CRM_Memberships_Utils {
       }
     }
 
-    $contactIds = [];
+    $contactIds = [$userID];
     if (!empty($rab)) {
       $relationshipsCurrentUserOnBSide = civicrm_api3('Relationship', 'get', [
         'return' => ["contact_id_a"],
@@ -74,9 +74,6 @@ class CRM_Memberships_Utils {
     }
     // Get all related Contacts for this user
     foreach ($contactIds as $cid) {
-      if ($userID == $cid) {
-        continue;
-      }
       // only look for parent / child relationship
       try {
         $contactDataResult = civicrm_api("Contact", "get", [
