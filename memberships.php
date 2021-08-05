@@ -193,6 +193,9 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
       $formName = get_class($form);
       if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+        if (!CRM_Utils_System::isUserLoggedIn()) {
+          return;
+        }
         $currentContactID = $form->getLoggedInUserContactID();
         // get related contact of logged in user based on relationship type
         // configured on setting pagg

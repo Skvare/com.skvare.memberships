@@ -92,6 +92,7 @@ class CRM_Memberships_Utils {
       catch (CiviCRM_API3_Exception $exception) {
       }
     }
+    /*
     foreach ($group_members as $contactID => &$contactDetails) {
       $membershipDetails = self::_get_membership_details($contactID);
       if (!empty($membershipDetails)) {
@@ -109,6 +110,7 @@ class CRM_Memberships_Utils {
         $contactDetails['membershipstatus'] = "<div1><span class='badge badge-warning'> Non Member</span></div1>";
       }
     }
+    */
     if (!empty($defaults['memberships_siblings_number'])) {
       $siblingsNumberOrder = [];
       $normalOrder = [];
