@@ -260,7 +260,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     // if recurring setting enabled then show drop down list instead of text
     // field to defined number of installment.
-    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id']) && CRM_Utils_System::isUserLoggedIn()) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
       if ($form->_values['is_recur']) {
         $installmentOption = ['2' => '2', '3' => '3', '4' => '4'];
@@ -369,6 +369,22 @@ function memberships_civicrm_alterMailParams(&$params, $context) {
           $params['tplParams']['membershipDetails'] = $membershipDetails;
           $params['tplParams']['custom_membership_signup'] = TRUE;
         }
+      }
+    }
+  }
+}
+
+function memberships_civicrm_alterTemplateFile($formName, $form, $context, &$tplName) {
+  if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      if (!CRM_Utils_System::isUserLoggedIn()) {
+        $config = CRM_Core_Config::singleton();
+        $destination = $config->userSystem->getLoginDestination($form);
+        $loginURL = $config->userSystem->getLoginURL($destination);
+        $template = CRM_Core_Smarty::singleton();
+        $template->assign('loginURL', $loginURL);
+        $tplName = 'AccessDenied.tpl';
       }
     }
   }
