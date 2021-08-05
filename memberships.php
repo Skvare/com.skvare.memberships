@@ -387,7 +387,7 @@ function memberships_civicrm_alterTemplateFile($formName, $form, $context, &$tpl
         $loginURL = $config->userSystem->getLoginURL($destination);
         $template = CRM_Core_Smarty::singleton();
         $template->assign('loginURL', $loginURL);
-        $tplName = 'AccessDenied.tpl';
+        $tplName = 'AccessDeniedMembership.tpl';
       }
     }
   }
