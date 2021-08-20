@@ -443,8 +443,8 @@ class CRM_Memberships_Utils {
     $contactMembershipID = NULL;
     foreach ($lineItems['members'] as $cid => $data) {
       // get existing Membership record if exist
-      if (!empty($contacts['membership_id'])) {
-        $contactMembershipID = $contacts['membership_id'];
+      if (!empty($contacts[$cid]['membership_id'])) {
+        $contactMembershipID = $contacts[$cid]['membership_id'];
       }
       else {
         $getContactMembership = [
