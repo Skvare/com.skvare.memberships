@@ -528,6 +528,7 @@ class CRM_Memberships_Utils {
       'sequential' => 1,
       'price_set_id' => "default_membership_type_amount",
       'api.PriceFieldValue.get' => [],
+      'options' => ['limit' => 0],
     ]);
 
     $total = 0;
