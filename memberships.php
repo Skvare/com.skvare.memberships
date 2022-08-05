@@ -392,3 +392,24 @@ function memberships_civicrm_alterTemplateFile($formName, $form, $context, &$tpl
     }
   }
 }
+
+/**
+ * invoke permissions hook
+ * note that permissions hook is now permission hook
+ *
+ * @param array $permissions
+ */
+function memberships_civicrm_permissions(&$permissions) {
+  memberships_civicrm_permission($permissions);
+}
+
+/**
+ * invoke permissions hook
+ *
+ * @param array $permissions
+ */
+function memberships_civicrm_permission(&$permissions) {
+  $permissions += [
+    'parent_signup_child' => E::ts('Allow Parent to signup their Child')
+  ];
+}
