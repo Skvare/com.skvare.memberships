@@ -54,7 +54,7 @@ class CRM_Memberships_Helper {
     $domainID = CRM_Core_Config::domainID();
     $settings = Civi::settings($domainID);
 
-    return $settings->get('memberships_config_' . $domainID);
+    return $settings->get('memberships_config_' . $domainID) ?? [];
   }
 
   public static function getCiviCRMFields() {

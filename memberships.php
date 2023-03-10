@@ -187,7 +187,7 @@ function memberships_civicrm_navigationMenu(&$menu) {
 }
 
 function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
-  if (($pageType == "contribution" || $pageType = 'membership')) {
+  if (($pageType == "contribution" || $pageType == 'membership')) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     // if this page is part of custom setup then prcoess it.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
