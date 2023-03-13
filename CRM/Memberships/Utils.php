@@ -756,7 +756,7 @@ class CRM_Memberships_Utils {
       'id' => $contributionID,
     ]);
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
-    if (in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
+    if (is_array($defaults['memberships_contribution_page_id']) && in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
       $resultMembership = civicrm_api3('MembershipPayment', 'get', [
         'sequential' => 1,
         'return' => ["membership_id"],
