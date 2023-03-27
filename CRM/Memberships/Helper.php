@@ -54,7 +54,16 @@ class CRM_Memberships_Helper {
     $domainID = CRM_Core_Config::domainID();
     $settings = Civi::settings($domainID);
 
-    return $settings->get('memberships_config_' . $domainID) ?? [];
+    $membershipsConfig = $settings->get('memberships_config_' . $domainID) ?? [];
+    if (!empty($membershipsConfig)) {
+      return $membershipsConfig;
+    }
+    $membershipsConfig['memberships_membership_types'] = [];
+    $membershipsConfig['memberships_membership_allowed_status'] = [];
+    $membershipsConfig['memberships_relationships'] = [];
+    $membershipsConfig['memberships_contribution_page_id'] = [];
+
+    return $membershipsConfig;
   }
 
   public static function getCiviCRMFields() {
