@@ -200,7 +200,16 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         // get related contact of logged in user based on relationship type
         // configured on setting pagg
         $allRelatedContact = CRM_Memberships_Utils::relatedContactsListing($form);
-        // get contact having membership records
+        // get contact having active membership records
+        $existingActiveMembershipContacts =
+          CRM_Memberships_Helper::getActiveMemberships($allRelatedContact, $currentContactID);
+        if (!empty($existingActiveMembershipContacts)) {
+          $form->assign('existingActiveMembershipContacts', $existingActiveMembershipContacts);
+        }
+        else {
+          $form->assign('existingActiveMembershipContacts', false);
+        }
+        // get contact having Pending membership records
         $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact);
         $_values = $form->getVar('_values');
 
@@ -214,7 +223,8 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         unset($membershipTobWithContact[$currentContactID]);
         [$calculatedAmount, $originalTotalAmount, $otherDiscount] =
           CRM_Memberships_Helper::prepareMemberList
-          ($currentContactID, $membershipTobWithContact, $isJccMember,
+          ($currentContactID, $membershipTobWithContact,
+            $existingActiveMembershipContacts, $isJccMember,
             $pageFinancialTypeID);
 
         // get value to form and session to recall these value on different pages..
