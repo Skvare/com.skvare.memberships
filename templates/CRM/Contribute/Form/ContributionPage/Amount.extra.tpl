@@ -10,7 +10,7 @@
 <table style="display: none;">
   <tr class="crm-event-form-block-is_recur_installments_number"><td scope="row" class="label">{$form.is_recur_installments_number.label}</td>
     <td>{$form.is_recur_installments_number.html}<br />
-      <span class="description">{ts}Restrict Total Number of  installmetns.{/ts}</span></td>
+      <span class="description">{ts}Restrict total number of installments.{/ts}</span></td>
   </tr>
 </table>
 {/if}
