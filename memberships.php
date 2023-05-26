@@ -133,7 +133,22 @@ function memberships_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
  */
 function memberships_civicrm_entityTypes(&$entityTypes) {
-  _memberships_civix_civicrm_entityTypes($entityTypes);
+  $entityTypes['CRM_Contribute_DAO_ContributionPage']['fields_callback'][]
+    = function ($class, &$fields) {
+    $fields['is_recur_installments_number'] = [
+      'name' => 'is_recur_installments_number',
+      'type' => CRM_Utils_Type::T_INT,
+      'title' => E::ts('Recurring Installments Count?'),
+      'description' => E::ts('Asks user for number of recurring installments'),
+      'where' => 'civicrm_contribution_page.is_recur_installments_number',
+      'default' => '0',
+      'table_name' => 'civicrm_contribution_page',
+      'entity' => 'Event',
+      'bao' => 'CRM_Contribute_DAO_ContributionPage',
+      'localizable' => 0,
+      'add' => '5.35',
+    ];
+  };
 }
 
 /**
@@ -276,7 +291,8 @@ function memberships_civicrm_buildForm($formName, &$form) {
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id']) && CRM_Utils_System::isUserLoggedIn()) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
       if ($form->_values['is_recur']) {
-        $installmentOption = ['2' => '2', '3' => '3'];
+        $installmentOption = CRM_Core_SelectValues::getNumericOptions(2,
+          $form->_values['is_recur_installments_number'] ?? 3);
         $form->removeElement('installments');
         $form->addElement('select', 'installments', 'installments', $installmentOption, ['aria-label' => ts('installments')]);
         CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/RecuringHelp.tpl']);
@@ -305,6 +321,26 @@ function memberships_civicrm_buildForm($formName, &$form) {
         }
       }
     }
+  }
+  elseif ($formName == 'CRM_Contribute_Form_ContributionPage_Amount') {
+    $paymentProcessors = CRM_Financial_BAO_PaymentProcessor::getAllPaymentProcessors('live');
+    $recurringPaymentProcessor = [];
+
+    if (!empty($paymentProcessors)) {
+      foreach ($paymentProcessors as $id => $processor) {
+        if (!empty($processor['is_recur'])) {
+          $recurringPaymentProcessor[] = $id;
+        }
+      }
+    }
+    if (!empty($recurringPaymentProcessor)) {
+      if (count($recurringPaymentProcessor)) {
+        $form->assign('recurringPaymentProcessor', $recurringPaymentProcessor);
+      }
+      $numericOptions = CRM_Core_SelectValues::getNumericOptions(2, 12);
+      $form->add('select', 'is_recur_installments_number', ts('Maximum Offer installments'), $numericOptions, FALSE, ['class' => 'required']);
+    }
+
   }
 }
 
