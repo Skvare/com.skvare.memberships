@@ -22,7 +22,7 @@
     {/if}
     {if $membershipTobWithContact}
     <div>{ts}The below are contacts that will be processed for membership payment and upon completion will be active members.{/ts}
-      {if $existingActiveMembershipContacts}
+      {if false && $existingActiveMembershipContacts}
         {ts}These children get a sibling discount considering their current active memberships.{/ts}
       {/if}
     </div>
