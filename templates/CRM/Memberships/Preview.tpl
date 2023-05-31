@@ -1,6 +1,6 @@
 <div class="crm-block crm-form-block crm-memberships-group-form-block">
     {if $existingActiveMembershipContacts}
-      <div>{ts}The following contacts have active membership and are not going to be processed again for membership payment.{/ts}</div>
+      <div>{ts}The following contacts have active memberships and are not going to be processed again for membership payment.{/ts}</div>
       <table class="selector">
         <tr class="columnheader">
           <th>{ts}Contact Name{/ts}</th>
@@ -21,7 +21,7 @@
     <hr><br/>
     {/if}
     {if $membershipTobWithContact}
-    <div>{ts}Following are contacts that get processed for membership payment, and membership gets assigned after completion of payment.{/ts}
+    <div>{ts}The below are contacts that will be processed for membership payment and upon completion will be active members.{/ts}
       {if $existingActiveMembershipContacts}
         {ts}These children get a sibling discount considering their current active memberships.{/ts}
       {/if}
