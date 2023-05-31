@@ -126,7 +126,7 @@
       </td>
     </tr>
       {foreach from=$membershipTypes key=type_id item=label}
-        {if isset($memberships_membership_types) and $type_id|in_array:$memberships_membership_types}
+        {if isset($memberships_membership_types) && is_array($memberships_membership_types) && $type_id|in_array:$memberships_membership_types}
         <tr><td colspan="2">
             <fieldset>
               <legend>{$label}</legend>
