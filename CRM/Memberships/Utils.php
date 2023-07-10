@@ -736,7 +736,7 @@ class CRM_Memberships_Utils {
       from civicrm_price_set s
       inner join civicrm_price_field f on (s.id = f.price_set_id)
       inner join civicrm_price_field_value fv on (fv.price_field_id = f.id)
-      where 
+      where
       s.id = 2
       and fv.membership_type_id = $membershipTypeID";
     $dao = CRM_Core_DAO::executeQuery($query);
@@ -756,7 +756,7 @@ class CRM_Memberships_Utils {
       'id' => $contributionID,
     ]);
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
-    if (in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
+    if (is_array($defaults['memberships_contribution_page_id']) && in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
       $resultMembership = civicrm_api3('MembershipPayment', 'get', [
         'sequential' => 1,
         'return' => ["membership_id"],
@@ -774,11 +774,18 @@ class CRM_Memberships_Utils {
               ]);
             }
             if (!empty($defaults['memberships_tag_partial_paid'])) {
-              civicrm_api3('EntityTag', 'create', [
+              $resultEntityTagPartialPaid = civicrm_api3('EntityTag', 'getcount', [
                 'entity_table' => 'civicrm_contact',
                 'entity_id' => $memberContactID,
                 'tag_id' => $defaults['memberships_tag_partial_paid'],
               ]);
+              if (!$resultEntityTagPartialPaid) {
+                civicrm_api3('EntityTag', 'create', [
+                  'entity_table' => 'civicrm_contact',
+                  'entity_id' => $memberContactID,
+                  'tag_id' => $defaults['memberships_tag_partial_paid'],
+                ]);
+              }
             }
           }
           elseif ($result['contribution_status'] == 'Completed') {
@@ -790,18 +797,26 @@ class CRM_Memberships_Utils {
               ]);
             }
             if (!empty($defaults['memberships_tag_full_paid'])) {
-              $resultTag = civicrm_api3('EntityTag', 'create', [
+              $resultEntityTagFullPaid = civicrm_api3('EntityTag', 'getcount', [
                 'entity_table' => 'civicrm_contact',
                 'entity_id' => $memberContactID,
                 'tag_id' => $defaults['memberships_tag_full_paid'],
               ]);
+              if (!$resultEntityTagFullPaid) {
+                $resultTag = civicrm_api3('EntityTag', 'create', [
+                  'entity_table' => 'civicrm_contact',
+                  'entity_id' => $memberContactID,
+                  'tag_id' => $defaults['memberships_tag_full_paid'],
+                ]);
+              }
             }
           }
         }
         catch (CiviCRM_API3_Exception $exception) {
-
+          CRM_Core_Error::debug_var('CiviCRM_API3_Exception', $exception->getMessage());
         }
       }
     }
   }
 }
+

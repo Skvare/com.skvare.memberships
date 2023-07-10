@@ -187,7 +187,7 @@ function memberships_civicrm_navigationMenu(&$menu) {
 }
 
 function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
-  if (($pageType == "contribution" || $pageType = 'membership')) {
+  if (($pageType == "contribution" || $pageType == 'membership')) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     // if this page is part of custom setup then prcoess it.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
@@ -391,4 +391,25 @@ function memberships_civicrm_alterTemplateFile($formName, $form, $context, &$tpl
       }
     }
   }
+}
+
+/**
+ * invoke permissions hook
+ * note that permissions hook is now permission hook
+ *
+ * @param array $permissions
+ */
+function memberships_civicrm_permissions(&$permissions) {
+  memberships_civicrm_permission($permissions);
+}
+
+/**
+ * invoke permissions hook
+ *
+ * @param array $permissions
+ */
+function memberships_civicrm_permission(&$permissions) {
+  $permissions += [
+    'parent_signup_child' => E::ts('Allow Parent to signup their Child')
+  ];
 }
