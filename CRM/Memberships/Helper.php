@@ -307,10 +307,11 @@ class CRM_Memberships_Helper {
    * Function get Contact to be processed.
    *
    * @param $allRelatedContact
+   * @param $existingActiveMembershipContacts
    * @return array
    * @throws CRM_Core_Exception
    */
-  public static function getMembershipTobeProcessed($allRelatedContact) {
+  public static function getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts) {
     $membershipContact = [];
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     $params = [
@@ -331,6 +332,10 @@ class CRM_Memberships_Helper {
       $params['contact_id'] = $cid;
       $result = civicrm_api3('Membership', 'get', $params);
       if (!empty($result['values'])) {
+        // Skip contact if they already have active membership.
+        if (array_key_exists($cid, $existingActiveMembershipContacts)) {
+          continue;
+        }
         $membershipContact[$cid] = $contactDetails;
         $membership = reset($result['values']);
         $membershipContact[$cid]['membership_id'] = $membership['id'];

@@ -225,7 +225,7 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
           $form->assign('existingActiveMembershipContacts', false);
         }
         // get contact having Pending membership records
-        $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact);
+        $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts);
         $_values = $form->getVar('_values');
 
         // check parent custom field to JCC Discounted Fee.
