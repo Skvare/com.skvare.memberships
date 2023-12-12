@@ -260,7 +260,58 @@ class CRM_Memberships_Helper {
     return $mysqlDate = strtotime($mysqlDate);
   }
 
-  public static function getMembershipTobeProcessed($allRelatedContact) {
+  /**
+   * Get List of Active Members.
+   *
+   * @param $allRelatedContact
+   * @param $currentContactID
+   * @return array
+   * @throws CRM_Core_Exception
+   */
+  public static function getActiveMemberships($allRelatedContact, $currentContactID) {
+    $membershipActiveContacts = [];
+    if (array_key_exists($currentContactID, $allRelatedContact)) {
+      unset($allRelatedContact[$currentContactID]);
+    }
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    $params = [
+      'sequential' => 1,
+      'options' => ['limit' => 1],
+    ];
+    if (!empty($defaults['memberships_membership_types'])) {
+      $params['membership_type_id'] = ['IN' => $defaults['memberships_membership_types']];
+    }
+    $params['active_only'] = 1;
+    $params['is_test'] = 0;
+
+
+    foreach ($allRelatedContact as $cid => $contactDetails) {
+      $params['contact_id'] = $cid;
+      $result = civicrm_api3('Membership', 'get', $params);
+      if (!empty($result['values'])) {
+        $membershipActiveContacts[$cid] = $contactDetails;
+        $membership = reset($result['values']);
+        $membershipActiveContacts[$cid]['membership_id'] = $membership['id'];
+        $membershipActiveContacts[$cid]['membership_name'] = $membership['membership_name'];
+        $membershipActiveContacts[$cid]['membership_type_id'] = $membership['membership_type_id'];
+        $membershipActiveContacts[$cid]['start_date'] = $membership['start_date'];
+        $membershipActiveContacts[$cid]['end_date'] = $membership['end_date'];
+        $membershipActiveContacts[$cid]['status_id'] = $membership['status_id'];
+      }
+    }
+
+    return $membershipActiveContacts;
+  }
+
+  /**
+   * Function get Contact to be processed.
+   *
+   * @param $allRelatedContact
+   * @param $existingActiveMembershipContacts
+   * @return array
+   * @throws CRM_Core_Exception
+   */
+  public static function getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts) {
     $membershipContact = [];
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     $params = [
@@ -281,6 +332,10 @@ class CRM_Memberships_Helper {
       $params['contact_id'] = $cid;
       $result = civicrm_api3('Membership', 'get', $params);
       if (!empty($result['values'])) {
+        // Skip contact if they already have active membership.
+        if (array_key_exists($cid, $existingActiveMembershipContacts)) {
+          continue;
+        }
         $membershipContact[$cid] = $contactDetails;
         $membership = reset($result['values']);
         $membershipContact[$cid]['membership_id'] = $membership['id'];
@@ -292,13 +347,28 @@ class CRM_Memberships_Helper {
     return $membershipContact;
   }
 
+  /**
+   * Function to get Pending Members list.
+   *
+   * @param $currentUser
+   * @param $membershipTobWithContact
+   * @param $existingActiveMembershipContacts
+   * @param false $isJccMember
+   * @param string $pageFinancialTypeID
+   * @return array
+   * @throws CRM_Core_Exception
+   */
   public static function prepareMemberList($currentUser,
                                            &$membershipTobWithContact,
+                                           $existingActiveMembershipContacts,
                                            $isJccMember = FALSE,
                                            $pageFinancialTypeID = '') {
     $membershipTypes = CRM_Memberships_Helper::membershipTypeCurrentDomain();
     $totalAmount = 0;
     $childNumber = 0;
+    if (!empty($existingActiveMembershipContacts)) {
+      $childNumber = count($existingActiveMembershipContacts);
+    }
     $membershipTypeContactMapping = [];
     foreach ($membershipTobWithContact as $contactID => &$details) {
       if ($contactID != $currentUser) {

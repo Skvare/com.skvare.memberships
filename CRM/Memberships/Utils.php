@@ -501,7 +501,7 @@ class CRM_Memberships_Utils {
     //add Account details
     $contribution['contribution'] = $getContribution;
     $contribution['skipLineItem'] = TRUE;
-    CRM_Contribute_BAO_Contribution::recordFinancialAccounts($contribution);
+    CRM_Contribute_BAO_Contribution::recordFinancialAccounts($contribution, $getContribution);
 
     foreach ($lineItems['members'] as $cid => $contact) {
       $defaultParams['entity_id'] = $contact['membershipId'];

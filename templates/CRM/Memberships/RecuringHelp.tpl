@@ -12,7 +12,6 @@
             var newAmount = total_amount_tmp / installments;
             var newAmountFormatted = CRM.formatMoney(newAmount, false, moneyFormat);
             var originalAmount = CRM.formatMoney(total_amount_tmp, false, moneyFormat);
-            console.log(originalAmount);
             cj("label[for='is_recur']").html('I want to divide ' + originalAmount + ' amount and pay ' + newAmountFormatted);
             cj('#recurHelp').html('');
         }
