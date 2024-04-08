@@ -307,6 +307,17 @@ function memberships_civicrm_buildForm($formName, &$form) {
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      $_params = $form->get('_params');
+      $totalAmount = $form->get('amount');
+      // update the processing amount if recurring payment is enabled.
+      if (!empty($params['is_recur']) && !empty($params['installments'])) {
+        $params['amount'] = $totalAmount;
+        $form->set('amount', $totalAmount);
+        $form->assign('amount', $totalAmount);
+        $form->assign_by_ref('amount', $totalAmount);
+        $template = CRM_Core_Smarty::singleton();
+        $template->assign_by_ref('amount', $totalAmount);
+      }
       $session = CRM_Core_Session::singleton();
       // Get the value from sesson and show on confirm and thank you page for
       // table listing of children.
