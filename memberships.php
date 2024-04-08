@@ -307,7 +307,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
-      $_params = $form->get('_params');
+      $params = $form->getVar('_params');
       $totalAmount = $form->get('amount');
       // update the processing amount if recurring payment is enabled.
       if (!empty($params['is_recur']) && !empty($params['installments'])) {
