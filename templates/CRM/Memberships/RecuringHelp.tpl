@@ -10,6 +10,7 @@
         if (total_amount_tmp && cj('#installments').val() && cj('#is_recur:checked').length) {
             var installments = cj('#installments :selected').val()
             var newAmount = total_amount_tmp / installments;
+            newAmount = roundUp(newAmount, 2);
             var newAmountFormatted = CRM.formatMoney(newAmount, false, moneyFormat);
             var originalAmount = CRM.formatMoney(total_amount_tmp, false, moneyFormat);
             cj("label[for='is_recur']").html('I want to divide ' + originalAmount + ' amount and pay ' + newAmountFormatted);
@@ -19,6 +20,11 @@
             cj("label[for='is_recur']").html('Pay in installments');
         }
     }
+    function roundUp(num, precision) {
+      precision = Math.pow(10, precision)
+      return Math.ceil(num * precision) / precision
+    }
+
     recurringHelp();
 </script>
 {/literal}
