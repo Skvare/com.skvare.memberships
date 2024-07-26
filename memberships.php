@@ -371,6 +371,11 @@ function memberships_civicrm_postProcess($formName, &$form) {
           $formatter = new \NumberFormatter('en_US', NumberFormatter::DECIMAL);
           $formatter->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $numberOfPlaces);
           $installmentAmount =  $money->formatWith($formatter);
+          // We do not need any thousand separator, payment processor require
+          // plain amount value.
+          $config = CRM_Core_Config::singleton();
+          $rep = [$config->monetaryThousandSeparator => '',];
+          $installmentAmount = strtr($installmentAmount, $rep);
           $params['amount'] = $installmentAmount;
           $form->setVar('_params', $params);
           $form->set('amount', $installmentAmount);
