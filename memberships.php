@@ -3,11 +3,6 @@
 require_once 'memberships.civix.php';
 // phpcs:disable
 use CRM_Memberships_ExtensionUtil as E;
-use Brick\Money\Money;
-use Brick\Money\Context\DefaultContext;
-use Brick\Money\Context\CustomContext;
-use Brick\Math\RoundingMode;
-
 // phpcs:enable
 
 /**
@@ -363,19 +358,7 @@ function memberships_civicrm_postProcess($formName, &$form) {
         $totalAmount = $form->get('amount');
         // update the processing amount if recurring payment is enabled.
         if (!empty($params['is_recur']) && !empty($params['installments'])) {
-          $installmentAmount = $totalAmount / $params['installments'];
-          $numberOfPlaces = 2;
-          $money = Money::of($installmentAmount, CRM_Core_Config::singleton()
-            ->defaultCurrency, new CustomContext($numberOfPlaces),
-            RoundingMode::CEILING);
-          $formatter = new \NumberFormatter('en_US', NumberFormatter::DECIMAL);
-          $formatter->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $numberOfPlaces);
-          $installmentAmount =  $money->formatWith($formatter);
-          // We do not need any thousand separator, payment processor require
-          // plain amount value.
-          $config = CRM_Core_Config::singleton();
-          $rep = [$config->monetaryThousandSeparator => '',];
-          $installmentAmount = strtr($installmentAmount, $rep);
+          $installmentAmount = CRM_Memberships_Utils::roundupMoneyForInstallment($totalAmount, $params['installments']);
           $params['amount'] = $installmentAmount;
           $form->setVar('_params', $params);
           $form->set('amount', $installmentAmount);

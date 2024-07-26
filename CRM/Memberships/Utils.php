@@ -1,6 +1,10 @@
 <?php
 
 use CRM_Memberships_ExtensionUtil as E;
+use Brick\Money\Money;
+use Brick\Money\Context\DefaultContext;
+use Brick\Money\Context\CustomContext;
+use Brick\Math\RoundingMode;
 
 class CRM_Memberships_Utils {
 
@@ -817,6 +821,25 @@ class CRM_Memberships_Utils {
         }
       }
     }
+  }
+
+  /**
+   * Function to do correct round up.
+   *
+   * @param $totalAmount
+   * @param $installments
+   */
+  public static function roundupMoneyForInstallment($totalAmount, $installments) {
+    $installmentAmount = $totalAmount / $installments;
+    $numberOfPlaces = 2;
+    $money = Money::of($installmentAmount, CRM_Core_Config::singleton()
+      ->defaultCurrency, new CustomContext($numberOfPlaces), RoundingMode::CEILING);
+    $formatter = new \NumberFormatter('en_US', NumberFormatter::DECIMAL);
+    $formatter->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $numberOfPlaces);
+    $installmentAmount = $money->formatWith($formatter);
+    $installmentAmount = CRM_Utils_Rule::cleanMoney($installmentAmount);
+
+    return $installmentAmount;
   }
 }
 
