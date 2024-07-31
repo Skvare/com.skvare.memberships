@@ -369,7 +369,7 @@ function memberships_civicrm_postProcess($formName, &$form) {
         $totalAmount = $form->get('amount');
         // update the processing amount if recurring payment is enabled.
         if (!empty($params['is_recur']) && !empty($params['installments'])) {
-          $installmentAmount = $totalAmount / $params['installments'];
+          $installmentAmount = CRM_Memberships_Utils::roundupMoneyForInstallment($totalAmount, $params['installments']);
           $params['amount'] = $installmentAmount;
           $form->setVar('_params', $params);
           $form->set('amount', $installmentAmount);
