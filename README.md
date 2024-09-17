@@ -1,15 +1,18 @@
 # com.skvare.memberships
 
-![Screenshot](/images/screenshot.png)
+![Screenshot](/images/membership_ext_setting.png)
 
-(*FIXME: In one or two paragraphs, describe what the extension does and why one would download it. *)
+Membership customized signup process
 
-The extension is licensed under [AGPL-3.0](LICENSE.txt).
+This extension allows you to sign up for membership for multiple contacts with discount (Discount based on contact present in the group).
+
+This extension is used for sibling discounts and can be used as a generic feature.
+
 
 ## Requirements
 
 * PHP v7.0+
-* CiviCRM (*FIXME: Version number*)
+* CiviCRM: 5.45, 5,63
 
 ## Installation (Web UI)
 
@@ -37,8 +40,10 @@ cv en memberships
 
 ## Usage
 
-(* FIXME: Where would a new user navigate to get started? What changes would they see? *)
+* Create a contribution page with a single fee amount.
+* That amount gets updated based on the number of contacts selected, and a discount is applied to the total amount.
 
-## Known Issues
 
-(* FIXME *)
+![Screenshot](/images/membership_signup.png)
+
+![Screenshot](/images/membership_signup_confirm.png)

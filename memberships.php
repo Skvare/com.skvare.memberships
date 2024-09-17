@@ -133,7 +133,22 @@ function memberships_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
  */
 function memberships_civicrm_entityTypes(&$entityTypes) {
-  _memberships_civix_civicrm_entityTypes($entityTypes);
+  $entityTypes['CRM_Contribute_DAO_ContributionPage']['fields_callback'][]
+    = function ($class, &$fields) {
+    $fields['is_recur_installments_number'] = [
+      'name' => 'is_recur_installments_number',
+      'type' => CRM_Utils_Type::T_INT,
+      'title' => E::ts('Recurring Installments Count?'),
+      'description' => E::ts('Asks user for number of recurring installments'),
+      'where' => 'civicrm_contribution_page.is_recur_installments_number',
+      'default' => '0',
+      'table_name' => 'civicrm_contribution_page',
+      'entity' => 'Event',
+      'bao' => 'CRM_Contribute_DAO_ContributionPage',
+      'localizable' => 0,
+      'add' => '5.35',
+    ];
+  };
 }
 
 /**
@@ -187,7 +202,7 @@ function memberships_civicrm_navigationMenu(&$menu) {
 }
 
 function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
-  if (($pageType == "contribution" || $pageType = 'membership')) {
+  if (($pageType == "contribution" || $pageType == 'membership')) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     // if this page is part of custom setup then prcoess it.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
@@ -200,8 +215,17 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         // get related contact of logged in user based on relationship type
         // configured on setting pagg
         $allRelatedContact = CRM_Memberships_Utils::relatedContactsListing($form);
-        // get contact having membership records
-        $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact);
+        // get contact having active membership records
+        $existingActiveMembershipContacts =
+          CRM_Memberships_Helper::getActiveMemberships($allRelatedContact, $currentContactID);
+        if (!empty($existingActiveMembershipContacts)) {
+          $form->assign('existingActiveMembershipContacts', $existingActiveMembershipContacts);
+        }
+        else {
+          $form->assign('existingActiveMembershipContacts', false);
+        }
+        // get contact having Pending membership records
+        $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts);
         $_values = $form->getVar('_values');
 
         // check parent custom field to JCC Discounted Fee.
@@ -214,7 +238,8 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         unset($membershipTobWithContact[$currentContactID]);
         [$calculatedAmount, $originalTotalAmount, $otherDiscount] =
           CRM_Memberships_Helper::prepareMemberList
-          ($currentContactID, $membershipTobWithContact, $isJccMember,
+          ($currentContactID, $membershipTobWithContact,
+            $existingActiveMembershipContacts, $isJccMember,
             $pageFinancialTypeID);
 
         // get value to form and session to recall these value on different pages..
@@ -266,7 +291,13 @@ function memberships_civicrm_buildForm($formName, &$form) {
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id']) && CRM_Utils_System::isUserLoggedIn()) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
       if ($form->_values['is_recur']) {
-        $installmentOption = ['2' => '2', '3' => '3'];
+        if (empty($form->_values['is_recur_installments_number'])) {
+          $is_recur_installments_number = 3;
+        }
+        else {
+          $is_recur_installments_number = $form->_values['is_recur_installments_number'];
+        }
+        $installmentOption = CRM_Core_SelectValues::getNumericOptions(2, $is_recur_installments_number ?? 3);
         $form->removeElement('installments');
         $form->addElement('select', 'installments', 'installments', $installmentOption, ['aria-label' => ts('installments')]);
         CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/RecuringHelp.tpl']);
@@ -276,6 +307,17 @@ function memberships_civicrm_buildForm($formName, &$form) {
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      $_params = $form->get('_params');
+      $totalAmount = $form->get('amount');
+      // update the processing amount if recurring payment is enabled.
+      if (!empty($params['is_recur']) && !empty($params['installments'])) {
+        $params['amount'] = $totalAmount;
+        $form->set('amount', $totalAmount);
+        $form->assign('amount', $totalAmount);
+        $form->assign_by_ref('amount', $totalAmount);
+        $template = CRM_Core_Smarty::singleton();
+        $template->assign_by_ref('amount', $totalAmount);
+      }
       $session = CRM_Core_Session::singleton();
       // Get the value from sesson and show on confirm and thank you page for
       // table listing of children.
@@ -295,6 +337,26 @@ function memberships_civicrm_buildForm($formName, &$form) {
         }
       }
     }
+  }
+  elseif ($formName == 'CRM_Contribute_Form_ContributionPage_Amount') {
+    $paymentProcessors = CRM_Financial_BAO_PaymentProcessor::getAllPaymentProcessors('live');
+    $recurringPaymentProcessor = [];
+
+    if (!empty($paymentProcessors)) {
+      foreach ($paymentProcessors as $id => $processor) {
+        if (!empty($processor['is_recur'])) {
+          $recurringPaymentProcessor[] = $id;
+        }
+      }
+    }
+    if (!empty($recurringPaymentProcessor)) {
+      if (count($recurringPaymentProcessor)) {
+        $form->assign('recurringPaymentProcessor', $recurringPaymentProcessor);
+      }
+      $numericOptions = CRM_Core_SelectValues::getNumericOptions(2, 12);
+      $form->add('select', 'is_recur_installments_number', ts('Maximum Offer installments'), $numericOptions, FALSE, ['class' => 'required']);
+    }
+
   }
 }
 
@@ -391,4 +453,25 @@ function memberships_civicrm_alterTemplateFile($formName, $form, $context, &$tpl
       }
     }
   }
+}
+
+/**
+ * invoke permissions hook
+ * note that permissions hook is now permission hook
+ *
+ * @param array $permissions
+ */
+function memberships_civicrm_permissions(&$permissions) {
+  memberships_civicrm_permission($permissions);
+}
+
+/**
+ * invoke permissions hook
+ *
+ * @param array $permissions
+ */
+function memberships_civicrm_permission(&$permissions) {
+  $permissions += [
+    'parent_signup_child' => E::ts('Allow Parent to signup their Child')
+  ];
 }

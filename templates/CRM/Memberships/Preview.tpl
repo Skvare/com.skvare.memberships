@@ -1,5 +1,31 @@
 <div class="crm-block crm-form-block crm-memberships-group-form-block">
+    {if $existingActiveMembershipContacts}
+      <div>{ts}The following contacts have active memberships and are not going to be processed again for membership payment.{/ts}</div>
+      <table class="selector">
+        <tr class="columnheader">
+          <th>{ts}Contact Name{/ts}</th>
+          <th>{ts}Membership Type{/ts}</th>
+          <th>{ts}Start Date{/ts}</th>
+          <th>{ts}End Date{/ts}</th>
+        </tr>
+          {counter start=0 skip=1 print=false}
+          {foreach from=$existingActiveMembershipContacts key=contactID item=contact}
+            <tr id='rowid{$contactID}' class="{cycle values="odd-row,even-row"}">
+              <td>{$contact.display_name}</td>
+              <td>{$contact.membership_name}</td>
+              <td>{$contact.start_date|crmDate}</td>
+              <td>{$contact.end_date|crmDate}</td>
+            </tr>
+          {/foreach}
+      </table>
+    <hr><br/>
+    {/if}
     {if $membershipTobWithContact}
+    <div>{ts}The below are contacts that will be processed for membership payment and upon completion will be active members.{/ts}
+      {if false && $existingActiveMembershipContacts}
+        {ts}These children get a sibling discount considering their current active memberships.{/ts}
+      {/if}
+    </div>
     <table class="selector">
         <tr class="columnheader">
             <th>{ts}Contact Name{/ts}</th>
@@ -17,7 +43,7 @@
 
                     {if $contact.fee_amount_sibling}
                         <br/>
-                        Sibling Discount : {$contact.fee_amount_sibling|crmMoney}
+                        {ts}Sibling Discount{/ts} : {$contact.fee_amount_sibling|crmMoney}
                     {/if}
                 </td>
                 <td>
@@ -29,11 +55,11 @@
         {if $originalTotalAmount && $otherDiscounts}
         <tr class="{cycle values="odd-row,even-row"}">
             <td colspan="2">&nbsp;</td>
-            <td>Sub Total</Total></td>
+            <td>{ts}Sub Total{/ts}</td>
             <td>{$originalTotalAmount|crmMoney}</td>
         </tr>
             <tr class="{cycle values="odd-row,even-row"}">
-                <td colspan="4" style="background: lightgray;">Additional Discounts</td>
+                <td colspan="4" style="background: lightgray;">{ts}Additional Discounts{/ts}</td>
             </tr>
 
         {foreach from=$otherDiscounts item=otherDiscount}
@@ -48,13 +74,13 @@
         {/if}
         {if $total_amount}
         <tr class="{cycle values="odd-row,even-row"}">
-            <td colspan="3">Total</td><td>{$total_amount|crmMoney}</td>
+            <td colspan="3">{ts}Total{/ts}</td><td>{$total_amount|crmMoney}</td>
         </tr>
         {/if}
     </table>
     {else}
     <div class="messages status continue_instructions-section">
-        <p>No Child Available for Membership Signup.</p>
+        <p>{ts}No Child Available for Membership Signup.{/ts}</p>
     </div>
     {/if}
 </div>
