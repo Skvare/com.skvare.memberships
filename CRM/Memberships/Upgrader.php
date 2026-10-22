@@ -10,10 +10,13 @@ class CRM_Memberships_Upgrader extends CRM_Extension_Upgrader_Base {
   // upgrade tasks. They are executed in order (like Drupal's hook_update_N).
 
   /**
-   * Example: Run an external SQL script when the module is installed.
+   * Adds the installment limit column to civicrm_contribution_page.
    *
+   * The column is intentionally left in place on uninstall so contribution
+   * page settings survive a reinstall.
+   */
   public function install() {
-    $this->executeSqlFile('sql/myinstall.sql');
+    self::addInstallmentsNumberColumn();
   }
 
   /**
@@ -134,9 +137,18 @@ class CRM_Memberships_Upgrader extends CRM_Extension_Upgrader_Base {
 
   public function upgrade_1001() {
     $this->ctx->log->info('Applying update 1001');
-    CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_contribution_page ADD is_recur_installments_number int DEFAULT 0 COMMENT 'installments numbers'");
+    self::addInstallmentsNumberColumn();
 
     return TRUE;
+  }
+
+  /**
+   * Adds civicrm_contribution_page.is_recur_installments_number if missing.
+   */
+  private static function addInstallmentsNumberColumn(): void {
+    if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_contribution_page', 'is_recur_installments_number', FALSE)) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_contribution_page ADD is_recur_installments_number int DEFAULT 0 COMMENT 'installments numbers'");
+    }
   }
 
 }
