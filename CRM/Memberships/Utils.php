@@ -543,18 +543,10 @@ class CRM_Memberships_Utils {
       'entity_table' => "civicrm_membership",
       'contribution_id' => $contribution['id'],
     ];
-    $contributionIDs = ['id' => $contribution['id']];
-    $values = [];
-    $getContribution = CRM_Contribute_BAO_Contribution::getValues($contributionIDs, $values);
-
-    //add Account details
-    $contribution['contribution'] = $getContribution;
-    $contribution['skipLineItem'] = TRUE;
-    $financialProcessor = new CRM_Contribute_BAO_FinancialProcessor(
-      $contribution['prevContribution'] ?? NULL, $getContribution, [], $contribution
-    );
-    $financialProcessor->recordFinancialAccounts($contribution);
-
+    // The contribution's financial transaction is recorded by core when the
+    // contribution is created/completed. Calling recordFinancialAccounts()
+    // again here added a second payment transaction for Completed
+    // contributions, so only the line items are added.
     foreach ($lineItems['members'] as $cid => $contact) {
       $defaultParams['entity_id'] = $contact['membershipId'];
       foreach ($contact['lineItems'] as $lineItem) {
