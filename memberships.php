@@ -278,15 +278,25 @@ function memberships_civicrm_postProcess($formName, &$form) {
 }
 
 function memberships_civicrm_pre($op, $objectName, $objectId, &$objectRef ) {
-  if ($objectName == 'Contribution') {
+  if ($objectName == 'Contribution' && in_array($op, ['create', 'edit'])) {
     $session = CRM_Core_Session::singleton();
     if ($session->get('membership_custom_signup')) {
       $defaults = CRM_Memberships_Helper::getSettingsConfig();
+      $signupPageID = $session->get('membership_custom_signup_page');
       // skip default line item , otherwise total amount on line item is more
       // than paid amount.
-      if (in_array($session->get('membership_custom_signup_page'), $defaults['memberships_contribution_page_id'])) {
-        unset($objectRef['line_item']);
-        $objectRef['skipLineItem'] = TRUE;
+      if (in_array($signupPageID, $defaults['memberships_contribution_page_id'])) {
+        // The session flag stays set for the rest of the visit, so only touch
+        // contributions from the signup page itself (create, and the later
+        // completion update which may not carry contribution_page_id).
+        $pageID = $objectRef['contribution_page_id'] ?? NULL;
+        if (empty($pageID) && $objectId) {
+          $pageID = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $objectId, 'contribution_page_id');
+        }
+        if ((int) $pageID === (int) $signupPageID) {
+          unset($objectRef['line_item']);
+          $objectRef['skipLineItem'] = TRUE;
+        }
       }
     }
   }
