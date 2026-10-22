@@ -561,8 +561,10 @@ class CRM_Memberships_Utils {
 
     //  Discount Line item
     foreach ($lineItems['otherDiscount'] as $otherDiscount) {
-      $defaultParams['entity_table'] = $otherDiscount['entity_table'];
       $params = array_merge($defaultParams, $otherDiscount);
+      // Discount lines are civicrm_contribution lines; entity_id must be the
+      // contribution, not the last member's membership ID left in $defaultParams.
+      $params['entity_id'] = $contribution['id'];
       $line = civicrm_api3('LineItem', 'create', $params);
     }
   }
