@@ -461,6 +461,9 @@ function memberships_civicrm_permissions(&$permissions) {
  */
 function memberships_civicrm_permission(&$permissions) {
   $permissions += [
-    'parent_signup_child' => E::ts('Allow Parent to signup their Child')
+    'parent_signup_child' => [
+      'label' => E::ts('Allow Parent to signup their Child'),
+      'description' => E::ts('Allow parents to sign up their children for memberships.'),
+    ],
   ];
 }
