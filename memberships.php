@@ -372,7 +372,6 @@ function memberships_civicrm_postProcess($formName, &$form) {
       // set the contribution id generated in transaction in session. To be used in other hook ,
       // as $form->_contributionID no exist with $form object
       $session = CRM_Core_Session::singleton();
-      CRM_Core_Error::debug_var('Confirm $form->_contributionID', $form->_contributionID);
       $session->set('family_contributionID', $form->_contributionID);
     }
   }
