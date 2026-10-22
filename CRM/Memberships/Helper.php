@@ -55,13 +55,22 @@ class CRM_Memberships_Helper {
     $settings = Civi::settings($domainID);
 
     $membershipsConfig = $settings->get('memberships_config_' . $domainID) ?? [];
-    if (!empty($membershipsConfig)) {
-      return $membershipsConfig;
+    // Multi-select values are stored as arrays, but an unselected field may
+    // be missing or empty; callers pass these straight to in_array().
+    $listKeys = [
+      'memberships_membership_types',
+      'memberships_membership_allowed_status',
+      'memberships_relationships',
+      'memberships_contribution_page_id',
+    ];
+    foreach ($listKeys as $key) {
+      $value = $membershipsConfig[$key] ?? [];
+      if (!is_array($value)) {
+        $value = ($value === '' || $value === NULL) ? [] : [$value];
+      }
+      $membershipsConfig[$key] = $value;
     }
-    $membershipsConfig['memberships_membership_types'] = [];
-    $membershipsConfig['memberships_membership_allowed_status'] = [];
-    $membershipsConfig['memberships_relationships'] = [];
-    $membershipsConfig['memberships_contribution_page_id'] = [];
+    $membershipsConfig['memberships_type_rule'] ??= [];
 
     return $membershipsConfig;
   }
@@ -80,13 +89,23 @@ class CRM_Memberships_Helper {
                                           $currentUserID, $childNumber,
                                           $isJccMember = FALSE) {
     $defaultsConfig = CRM_Memberships_Helper::getSettingsConfig();
-    $membershipFeeDetails = $defaultsConfig['memberships_type_rule'][$membershipTypeID];
+    $membershipFeeDetails = $defaultsConfig['memberships_type_rule'][$membershipTypeID] ?? NULL;
+    if (!is_array($membershipFeeDetails)) {
+      // The type is selected on the settings page but has no fee rule saved.
+      Civi::log()->warning('com.skvare.memberships: no fee rule configured for membership type {type} on domain {domain}; fee defaults to 0.', [
+        'type' => $membershipTypeID,
+        'domain' => CRM_Core_Config::domainID(),
+      ]);
+      $membershipFeeDetails = [];
+    }
     $currentDate = strtotime(date('YmdHis'));
     //$currentDate = strtotime("15 September 2021");
     //$currentDate = strtotime("15 January 2022");
     //$currentDate = strtotime("15 March 2022");
     $childNumber = ($childNumber >= 4) ? 4 : $childNumber;
-    $defaultFee = $sellFee = $membershipFeeDetails['regular'];
+    // A blank "Default Fee" is saved as '' which PHP 8 cannot subtract.
+    $regularFee = $membershipFeeDetails['regular'] ?? 0;
+    $defaultFee = $sellFee = is_numeric($regularFee) ? $regularFee : 0;
     $siblingDiscountFee = 0;
     $discountName = '';
     if ($contactID != $currentUserID) {
@@ -174,6 +193,7 @@ class CRM_Memberships_Helper {
     $result = civicrm_api3('MembershipType', 'get', [
       'sequential' => 1,
       'return' => ["id", "name"],
+      'options' => ['limit' => 0],
     ]);
     $membershipType = [];
     foreach ($result['values'] as $details) {
@@ -440,7 +460,8 @@ class CRM_Memberships_Helper {
       }
     }
 
-    return [$totalAmount, $originalTotalAmount, $discountOther];
+    // Discounts are float arithmetic; keep the page amount at cents precision.
+    return [round($totalAmount, 2), $originalTotalAmount, $discountOther];
   }
 
   /**
@@ -512,7 +533,7 @@ class CRM_Memberships_Helper {
     if ($newamount <= 0) {
       $newamount = '0.00';
     }
-    $discountAmount = $newamount - $amount;
+    $discountAmount = round($newamount - $amount, 2);
 
     return [$newamount, $discountAmount, $newlabel];
   }

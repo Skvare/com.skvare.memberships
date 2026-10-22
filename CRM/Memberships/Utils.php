@@ -29,7 +29,7 @@ class CRM_Memberships_Utils {
     $rab = [];
     $rba = [];
     foreach ($relationships as $r) {
-      @ list($rType, $dir) = explode("_", $r, 2);
+      [$rType, $dir] = array_pad(explode("_", $r, 2), 2, NULL);
       if ($dir == NULL) {
         $rab[] = $rType;
         $rba[] = $rType;
@@ -93,7 +93,7 @@ class CRM_Memberships_Utils {
           $group_members[$cid]['display_name'] .= ' (you)';
         }
       }
-      catch (CiviCRM_API3_Exception $exception) {
+      catch (CRM_Core_Exception $exception) {
       }
     }
     /*
@@ -251,7 +251,7 @@ class CRM_Memberships_Utils {
     $contactId = CRM_Core_Session::getLoggedInContactID();
 
     if (!$contactId) {
-      throw new API_Exception("You do not have permission to access this api", 1);
+      throw new CRM_Core_Exception("You do not have permission to access this api", 1);
     }
     $lineItems = self::makeLineItemArray2($params['contacts']);
     [$payment, $isSuccessfull, $errorMsg] = self::makeRegistrationPayment($params['paymentDetails'], $lineItems, $contactId);
@@ -402,7 +402,7 @@ class CRM_Memberships_Utils {
 
       return [$transaction['values'][$transaction['id']], TRUE, $errorMsg];
     }
-    catch (CiviCRM_API3_Exception $exception) {
+    catch (CRM_Core_Exception $exception) {
       return [[], FALSE, $exception->getMessage()];
     }
   }
@@ -580,6 +580,8 @@ class CRM_Memberships_Utils {
     ]);
 
     $total = 0;
+    $subTotals = [];
+    $priceFieldDetails = [];
     foreach ($contacts as $cid => &$contact) {
       //fetch the display name because it may have been updated
       $displayName = $contact['display_name'];
@@ -610,12 +612,14 @@ class CRM_Memberships_Utils {
       $total += $subTotal;
     }
     $session = CRM_Core_Session::singleton();
-    $otherDiscounts = $session->get('otherDiscounts');
+    $otherDiscounts = $session->get('otherDiscounts') ?? [];
     $itemOther = [];
     foreach ($otherDiscounts as $index => $otherDiscount) {
       $itemOther[$index] = [];
       $itemOther[$index]['qty'] = 1;
-      $itemOther[$index]['financial_type_id'] = $priceFieldDetails['financial_type_id'];
+      // Use the members' financial type; fall back to the page's when no
+      // member line matched a price field.
+      $itemOther[$index]['financial_type_id'] = $priceFieldDetails['financial_type_id'] ?? $otherDiscount['financial_type_id'] ?? NULL;
       $itemOther[$index]['unit_price'] = $otherDiscount['amount'];
       $itemOther[$index]['line_total'] = $otherDiscount['amount'];
       $itemOther[$index]['label'] = $otherDiscount['label'];
@@ -786,8 +790,8 @@ class CRM_Memberships_Utils {
       inner join civicrm_price_field_value fv on (fv.price_field_id = f.id)
       where
       s.id = 2
-      and fv.membership_type_id = $membershipTypeID";
-    $dao = CRM_Core_DAO::executeQuery($query);
+      and fv.membership_type_id = %1";
+    $dao = CRM_Core_DAO::executeQuery($query, [1 => [$membershipTypeID, 'Positive']]);
     $priceField = [];
     while ($dao->fetch()) {
       $priceField['field_id'] = $dao->field_id;
@@ -860,8 +864,11 @@ class CRM_Memberships_Utils {
             }
           }
         }
-        catch (CiviCRM_API3_Exception $exception) {
-          CRM_Core_Error::debug_var('CiviCRM_API3_Exception', $exception->getMessage());
+        catch (CRM_Core_Exception $exception) {
+          Civi::log()->error('com.skvare.memberships: group/tag update failed for contribution {contribution}: {message}', [
+            'contribution' => $contributionID,
+            'message' => $exception->getMessage(),
+          ]);
         }
       }
     }
@@ -876,7 +883,8 @@ class CRM_Memberships_Utils {
   public static function roundupMoneyForInstallment($totalAmount, $installments) {
     $installmentAmount = $totalAmount / $installments;
     $numberOfPlaces = 2;
-    $money = Money::of($installmentAmount, CRM_Core_Config::singleton()
+    // brick/math deprecates float input; the string cast is what it did internally.
+    $money = Money::of((string) $installmentAmount, CRM_Core_Config::singleton()
       ->defaultCurrency, new CustomContext($numberOfPlaces), RoundingMode::CEILING);
     $formatter = new \NumberFormatter('en_US', NumberFormatter::DECIMAL);
     $formatter->setAttribute(\NumberFormatter::MIN_FRACTION_DIGITS, $numberOfPlaces);

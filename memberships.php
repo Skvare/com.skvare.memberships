@@ -133,11 +133,9 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         // get value to form and session to recall these value on different pages..
         $session = CRM_Core_Session::singleton();
         $form->assign('membershipTobWithContact', $membershipTobWithContact);
-        $form->setVar('processMembershipRecord', $membershipTobWithContact);
         $session->set('membershipTobWithContact', $membershipTobWithContact);
 
         $form->assign('otherDiscounts', $otherDiscount);
-        $form->setVar('otherDiscounts', $otherDiscount);
         $session->set('otherDiscounts', $otherDiscount);
 
         $form->assign('originalTotalAmount', $originalTotalAmount);
@@ -202,9 +200,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
         $params['amount'] = $totalAmount;
         $form->set('amount', $totalAmount);
         $form->assign('amount', $totalAmount);
-        $form->assign_by_ref('amount', $totalAmount);
-        $template = CRM_Core_Smarty::singleton();
-        $template->assign_by_ref('amount', $totalAmount);
+        CRM_Core_Smarty::singleton()->assign('amount', $totalAmount);
       }
       $session = CRM_Core_Session::singleton();
       // Get the value from sesson and show on confirm and thank you page for
