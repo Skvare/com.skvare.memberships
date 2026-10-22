@@ -16,15 +16,6 @@ function memberships_civicrm_config(&$config) {
 }
 
 /**
- * Implements hook_civicrm_xmlMenu().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_xmlMenu
- */
-function memberships_civicrm_xmlMenu(&$files) {
-  _memberships_civix_civicrm_xmlMenu($files);
-}
-
-/**
  * Implements hook_civicrm_install().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_install
@@ -34,96 +25,12 @@ function memberships_civicrm_install() {
 }
 
 /**
- * Implements hook_civicrm_postInstall().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_postInstall
- */
-function memberships_civicrm_postInstall() {
-  _memberships_civix_civicrm_postInstall();
-}
-
-/**
- * Implements hook_civicrm_uninstall().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_uninstall
- */
-function memberships_civicrm_uninstall() {
-  _memberships_civix_civicrm_uninstall();
-}
-
-/**
  * Implements hook_civicrm_enable().
  *
  * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_enable
  */
 function memberships_civicrm_enable() {
   _memberships_civix_civicrm_enable();
-}
-
-/**
- * Implements hook_civicrm_disable().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_disable
- */
-function memberships_civicrm_disable() {
-  _memberships_civix_civicrm_disable();
-}
-
-/**
- * Implements hook_civicrm_upgrade().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_upgrade
- */
-function memberships_civicrm_upgrade($op, CRM_Queue_Queue $queue = NULL) {
-  return _memberships_civix_civicrm_upgrade($op, $queue);
-}
-
-/**
- * Implements hook_civicrm_managed().
- *
- * Generate a list of entities to create/deactivate/delete when this module
- * is installed, disabled, uninstalled.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_managed
- */
-function memberships_civicrm_managed(&$entities) {
-  _memberships_civix_civicrm_managed($entities);
-}
-
-/**
- * Implements hook_civicrm_caseTypes().
- *
- * Generate a list of case-types.
- *
- * Note: This hook only runs in CiviCRM 4.4+.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_caseTypes
- */
-function memberships_civicrm_caseTypes(&$caseTypes) {
-  _memberships_civix_civicrm_caseTypes($caseTypes);
-}
-
-/**
- * Implements hook_civicrm_angularModules().
- *
- * Generate a list of Angular modules.
- *
- * Note: This hook only runs in CiviCRM 4.5+. It may
- * use features only available in v4.6+.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_angularModules
- */
-function memberships_civicrm_angularModules(&$angularModules) {
-  _memberships_civix_civicrm_angularModules($angularModules);
-}
-
-/**
- * Implements hook_civicrm_alterSettingsFolders().
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_alterSettingsFolders
- */
-function memberships_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
-  _memberships_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
 /**
@@ -138,13 +45,6 @@ function memberships_alter_contribution_page_fields(\Civi\Core\Event\GenericHook
     'default' => 0,
     'add' => '5.35',
   ];
-}
-
-/**
- * Implements hook_civicrm_thems().
- */
-function memberships_civicrm_themes(&$themes) {
-  _memberships_civix_civicrm_themes($themes);
 }
 
 // --- Functions below this ship commented out. Uncomment as required. ---
@@ -187,7 +87,6 @@ function memberships_civicrm_navigationMenu(&$menu) {
     'operator' => 'OR',
     'separator' => 0,
   ]);
-  _memberships_civix_navigationMenu($menu);
 }
 
 function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
@@ -234,11 +133,9 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         // get value to form and session to recall these value on different pages..
         $session = CRM_Core_Session::singleton();
         $form->assign('membershipTobWithContact', $membershipTobWithContact);
-        $form->setVar('processMembershipRecord', $membershipTobWithContact);
         $session->set('membershipTobWithContact', $membershipTobWithContact);
 
         $form->assign('otherDiscounts', $otherDiscount);
-        $form->setVar('otherDiscounts', $otherDiscount);
         $session->set('otherDiscounts', $otherDiscount);
 
         $form->assign('originalTotalAmount', $originalTotalAmount);
@@ -303,9 +200,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
         $params['amount'] = $totalAmount;
         $form->set('amount', $totalAmount);
         $form->assign('amount', $totalAmount);
-        $form->assign_by_ref('amount', $totalAmount);
-        $template = CRM_Core_Smarty::singleton();
-        $template->assign_by_ref('amount', $totalAmount);
+        CRM_Core_Smarty::singleton()->assign('amount', $totalAmount);
       }
       $session = CRM_Core_Session::singleton();
       // Get the value from sesson and show on confirm and thank you page for
@@ -321,8 +216,13 @@ function memberships_civicrm_buildForm($formName, &$form) {
         // Process the Memebership once contribution is processed.
         $familyContributionID = $session->get('family_contributionID');
         if (!empty($familyContributionID)) {
-          CRM_Memberships_Helper::processMembership($familyContributionID, $membershipTobWithContact);
+          $processed = CRM_Memberships_Helper::processMembership($familyContributionID, $membershipTobWithContact);
           CRM_Memberships_Utils::addContactToGroupTag($familyContributionID);
+          if ($processed) {
+            // Reloading the thank-you page must not renew the memberships
+            // or add the line items a second time.
+            $session->set('family_contributionID', NULL);
+          }
         }
       }
     }
@@ -372,22 +272,31 @@ function memberships_civicrm_postProcess($formName, &$form) {
       // set the contribution id generated in transaction in session. To be used in other hook ,
       // as $form->_contributionID no exist with $form object
       $session = CRM_Core_Session::singleton();
-      CRM_Core_Error::debug_var('Confirm $form->_contributionID', $form->_contributionID);
       $session->set('family_contributionID', $form->_contributionID);
     }
   }
 }
 
 function memberships_civicrm_pre($op, $objectName, $objectId, &$objectRef ) {
-  if ($objectName == 'Contribution') {
+  if ($objectName == 'Contribution' && in_array($op, ['create', 'edit'])) {
     $session = CRM_Core_Session::singleton();
     if ($session->get('membership_custom_signup')) {
       $defaults = CRM_Memberships_Helper::getSettingsConfig();
+      $signupPageID = $session->get('membership_custom_signup_page');
       // skip default line item , otherwise total amount on line item is more
       // than paid amount.
-      if (in_array($session->get('membership_custom_signup_page'), $defaults['memberships_contribution_page_id'])) {
-        unset($objectRef['line_item']);
-        $objectRef['skipLineItem'] = TRUE;
+      if (in_array($signupPageID, $defaults['memberships_contribution_page_id'])) {
+        // The session flag stays set for the rest of the visit, so only touch
+        // contributions from the signup page itself (create, and the later
+        // completion update which may not carry contribution_page_id).
+        $pageID = $objectRef['contribution_page_id'] ?? NULL;
+        if (empty($pageID) && $objectId) {
+          $pageID = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $objectId, 'contribution_page_id');
+        }
+        if ((int) $pageID === (int) $signupPageID) {
+          unset($objectRef['line_item']);
+          $objectRef['skipLineItem'] = TRUE;
+        }
       }
     }
   }
@@ -407,12 +316,20 @@ function memberships_civicrm_alterMailParams(&$params, $context) {
     /*
      // Use follwing html in online reciept template above line item element
       {if $custom_membership_signup and $membershipDetails}
-         <tr><td colspan="2">{$membershipDetails}</td></tr>
+         <tr><td colspan="2">{$membershipDetails nofilter}</td></tr>
       {/if}
      */
-    if (($params['groupName'] == 'msg_tpl_workflow_contribution' && $params['valueName'] == 'contribution_online_receipt')) {
+    // CiviCRM 6 no longer passes groupName or tplParams.contributionPageId
+    // for the online receipt; identify it by workflow and look up the page.
+    $workflow = $params['workflow'] ?? $params['valueName'] ?? NULL;
+    if ($workflow === 'contribution_online_receipt') {
       $defaults = CRM_Memberships_Helper::getSettingsConfig();
-      if (in_array($params['tplParams']['contributionPageId'], $defaults['memberships_contribution_page_id'])) {
+      $contributionPageID = $params['tplParams']['contributionPageId'] ?? NULL;
+      $contributionID = $params['tplParams']['contributionID'] ?? NULL;
+      if (empty($contributionPageID) && $contributionID) {
+        $contributionPageID = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $contributionID, 'contribution_page_id');
+      }
+      if ($contributionPageID && in_array($contributionPageID, $defaults['memberships_contribution_page_id'])) {
         $session = CRM_Core_Session::singleton();
         if ($session->get('membershipTobWithContact')) {
           $template = CRM_Core_Smarty::singleton();

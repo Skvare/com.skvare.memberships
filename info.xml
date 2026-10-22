@@ -2,29 +2,44 @@
 <extension key="com.skvare.memberships" type="module">
   <file>memberships</file>
   <name>Membership custom signup process</name>
-  <description>Membership custom signup process</description>
+  <description>Lets a logged-in parent pay for the pending memberships of related contacts (e.g. their children) on a contribution page, with sibling, dated, JCC, group and financial-aid discounts and optional installments.</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>Sunil Pawar</author>
     <email>sunil@skvare.com</email>
   </maintainer>
   <urls>
-    <url desc="Main Extension Page">http://FIXME</url>
-    <url desc="Documentation">http://FIXME</url>
-    <url desc="Support">http://FIXME</url>
+    <url desc="Main Extension Page">https://github.com/Skvare/com.skvare.memberships</url>
+    <url desc="Documentation">https://github.com/Skvare/com.skvare.memberships/tree/civicrm_6_16/docs</url>
+    <url desc="Support">https://github.com/Skvare/com.skvare.memberships/issues</url>
     <url desc="Licensing">http://www.gnu.org/licenses/agpl-3.0.html</url>
   </urls>
-  <releaseDate>2021-06-28</releaseDate>
-  <version>1.0</version>
-  <develStage>alpha</develStage>
+  <releaseDate>2026-10-22</releaseDate>
+  <version>1.1.0</version>
+  <develStage>stable</develStage>
   <compatibility>
-    <ver>5.0</ver>
+    <ver>6.16</ver>
   </compatibility>
-  <comments>This is a new, undeveloped module</comments>
+  <php_compatibility>
+    <ver>8.2</ver>
+    <ver>8.3</ver>
+  </php_compatibility>
+  <smarty_compatibility>
+    <ver>5</ver>
+  </smarty_compatibility>
+  <comments>Built for the FOIS multi-domain sites. See docs/ for configuration and behaviour.</comments>
   <classloader>
     <psr4 prefix="Civi\" path="Civi"/>
+    <psr0 prefix="CRM_" path="."/>
   </classloader>
   <civix>
     <namespace>CRM/Memberships</namespace>
+    <format>26.10.3</format>
   </civix>
+  <mixins>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.3</mixin>
+    <mixin>scan-classes@1.0.0</mixin>
+  </mixins>
+  <upgrader>CiviMix\Schema\Memberships\AutomaticUpgrader</upgrader>
 </extension>
