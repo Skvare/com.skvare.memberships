@@ -467,8 +467,22 @@ class CRM_Memberships_Helper {
   /**
    * @param $familyContributionID
    * @param $membershipTobWithContact
+   *
+   * @return bool
+   *   TRUE if the contribution's memberships have been processed (now or
+   *   earlier), FALSE if its status does not allow processing yet.
    */
   public static function processMembership($familyContributionID, $membershipTobWithContact) {
+    // Membership line items are only added here, so their presence means the
+    // contribution was already processed (e.g. the thank-you page reloaded).
+    $alreadyProcessed = CRM_Core_DAO::singleValueQuery(
+      "SELECT COUNT(*) FROM civicrm_line_item WHERE contribution_id = %1 AND entity_table = 'civicrm_membership'",
+      [1 => [$familyContributionID, 'Positive']]
+    );
+    if ($alreadyProcessed) {
+      return TRUE;
+    }
+
     $result = civicrm_api3('Contribution', 'getsingle', [
       'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'receive_date', 'currency', 'contact_id', 'contribution_recur_id'],
       'id' => $familyContributionID,
@@ -501,7 +515,10 @@ class CRM_Memberships_Helper {
       // Add line items
       CRM_Memberships_Utils::addLineItems($result, $lineItems);
 
+      return TRUE;
     }
+
+    return FALSE;
   }
 
   /**
