@@ -1,49 +1,68 @@
 # com.skvare.memberships
 
-![Screenshot](/images/membership_ext_setting.png)
+Custom membership signup for families. A logged-in parent opens a configured
+contribution page, sees which related contacts (usually their children)
+already have active memberships and which still need to be paid for, and pays
+for all of them in one contribution, with:
 
-Membership customized signup process
+* per-child fees with dated discount windows ("early bird"), JCC and sibling
+  discounts,
+* group-based discounts (financial aid from custom fields, special discount),
+* optional installments (recurring payments with a capped number of
+  installments),
+* membership creation/renewal, line items per child, and group/tag
+  assignment once the contribution is processed.
 
-This extension allows you to sign up for membership for multiple contacts with discount (Discount based on contact present in the group).
-
-This extension is used for sibling discounts and can be used as a generic feature.
-
+![Settings page](images/membership_ext_setting.png)
 
 ## Requirements
 
-* PHP v7.0+
-* CiviCRM: 5.45, 5,63
+* CiviCRM 6.16 or later (Smarty 5)
+* PHP 8.2 or 8.3
+* CiviMember enabled, the "Membership Amount" price set
+  (`default_membership_type_amount`) with a price option per membership type
 
-## Installation (Web UI)
+## Installation
 
-This extension has not yet been published for installation via the web UI.
-
-## Installation (CLI, Zip)
-
-Sysadmins and developers may download the `.zip` file for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv).
-
-```bash
-cd <extension-dir>
-cv dl com.skvare.memberships@https://github.com/FIXME/com.skvare.memberships/archive/master.zip
-```
-
-## Installation (CLI, Git)
-
-Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) repo for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv).
+On the FOIS sites the extension is installed by Composer from the project's
+`composer.json` (`extra.civicrm.extensions."com.skvare.memberships"`), then
+enabled with:
 
 ```bash
-git clone https://github.com/FIXME/com.skvare.memberships.git
 cv en memberships
 ```
 
+Elsewhere, download or clone it into the CiviCRM extensions directory and
+enable it from **Administer » System Settings » Extensions** or with `cv en`.
+
+Installing adds `civicrm_contribution_page.is_recur_installments_number`.
+
 ## Usage
 
-* Create a contribution page with a single fee amount.
-* That amount gets updated based on the number of contacts selected, and a discount is applied to the total amount.
+1. Configure **Administer » CiviMember » Custom Membership Signup Setting**
+   (`civicrm/admin/memberships/setting`) for each site/domain.
+2. Create a contribution page with a single fee amount and select it in the
+   settings. The amount is replaced with the calculated family total.
+3. Parents must be logged in; anonymous visitors see a login prompt.
 
+![Signup page](images/membership_signup.png)
 
-![Screenshot](/images/membership_signup.png)
+![Confirmation page](images/membership_signup_confirm.png)
 
-![Screenshot](/images/membership_signup_confirm.png)
+## Documentation
+
+See [`docs/`](docs/index.md):
+
+* [Installation and upgrade](docs/installation.md)
+* [Configuration](docs/configuration.md)
+* [Signup flow](docs/signup-flow.md)
+* [Fees and discounts](docs/fees-and-discounts.md)
+* [Memberships and accounting](docs/memberships-and-accounting.md)
+* [Integration and dependencies](docs/integration.md)
+* [Developer notes](docs/developer.md)
+* [Known issues and recommendations](docs/known-issues.md)
+* [Changelog](docs/CHANGELOG.md)
+
+## License
+
+AGPL-3.0, see [LICENSE.txt](LICENSE.txt).
