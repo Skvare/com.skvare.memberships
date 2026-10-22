@@ -12,6 +12,7 @@ use CRM_Memberships_ExtensionUtil as E;
  */
 function memberships_civicrm_config(&$config) {
   _memberships_civix_civicrm_config($config);
+  Civi::dispatcher()->addListener('civi.entity.fields::ContributionPage', 'memberships_alter_contribution_page_fields');
 }
 
 /**
@@ -126,29 +127,17 @@ function memberships_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 }
 
 /**
- * Implements hook_civicrm_entityTypes().
- *
- * Declare entity types provided by this module.
- *
- * @link https://docs.civicrm.org/dev/en/latest/hooks/hook_civicrm_entityTypes
+ * Adds the membership installment limit to ContributionPage field metadata.
  */
-function memberships_civicrm_entityTypes(&$entityTypes) {
-  $entityTypes['CRM_Contribute_DAO_ContributionPage']['fields_callback'][]
-    = function ($class, &$fields) {
-    $fields['is_recur_installments_number'] = [
-      'name' => 'is_recur_installments_number',
-      'type' => CRM_Utils_Type::T_INT,
-      'title' => E::ts('Recurring Installments Count?'),
-      'description' => E::ts('Asks user for number of recurring installments'),
-      'where' => 'civicrm_contribution_page.is_recur_installments_number',
-      'default' => '0',
-      'table_name' => 'civicrm_contribution_page',
-      'entity' => 'Event',
-      'bao' => 'CRM_Contribute_DAO_ContributionPage',
-      'localizable' => 0,
-      'add' => '5.35',
-    ];
-  };
+function memberships_alter_contribution_page_fields(\Civi\Core\Event\GenericHookEvent $event) {
+  $event->fields['is_recur_installments_number'] = [
+    'title' => E::ts('Recurring Installments Count?'),
+    'description' => E::ts('Asks user for number of recurring installments'),
+    'sql_type' => 'int',
+    'input_type' => 'Number',
+    'default' => 0,
+    'add' => '5.35',
+  ];
 }
 
 /**

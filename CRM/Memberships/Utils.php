@@ -462,15 +462,56 @@ class CRM_Memberships_Utils {
         // Existing Membership ID
         $contactMembershipID = $contactMembership['id'] ?? NULL;
       }
-      [$membership, $renewalMode, $dates,] = CRM_Member_BAO_Membership::processMembership(
-        $cid, $contacts[$cid]['membership_type_id'], $isTest,
-        date('YmdHis'), CRM_Core_Session::getLoggedInContactID() ?? NULL,
-        $customFieldsFormatted, $numTerms, $contactMembershipID, $isPending,
-        NULL, NULL, $isPayLater, $additionalParams,
-        [], NULL, []);
-      if (empty($contactMembershipID)) {
-        $contactMembershipID = $membership->id;
+      // CiviCRM 6 removed BAO::processMembership; retain the existing FOIS
+      // new/pending/renewal rules while using the current membership BAO.
+      $current = CRM_Member_BAO_Membership::getContactMembership(
+        $cid, $contacts[$cid]['membership_type_id'], $isTest, $contactMembershipID, TRUE
+      );
+      $membershipParams = [
+        'contact_id' => $cid,
+        'membership_type_id' => $contacts[$cid]['membership_type_id'],
+        'is_test' => $isTest,
+        'is_override' => FALSE,
+        'membership_activity_status' => ($isPending || $isPayLater) ? 'Scheduled' : 'Completed',
+      ];
+      if ($current) {
+        $membershipParams['id'] = $current['id'];
+        $statusName = CRM_Core_PseudoConstant::getName('CRM_Member_BAO_Membership', 'status_id', $current['status_id']);
+        if ($isPending || in_array($statusName, ['Pending', 'Cancelled'], TRUE)) {
+          foreach (['status_id', 'start_date', 'end_date', 'join_date'] as $field) {
+            $membershipParams[$field] = $current[$field];
+          }
+          $type = CRM_Member_BAO_MembershipType::getMembershipType($contacts[$cid]['membership_type_id']);
+          $membershipParams['max_related'] = $type['max_related'] ?? NULL;
+        }
+        else {
+          CRM_Member_BAO_Membership::fixMembershipStatusBeforeRenew($current, date('YmdHis'));
+          $dates = CRM_Member_BAO_MembershipType::getRenewalDatesForMembershipType(
+            $current['id'], date('YmdHis'), $contacts[$cid]['membership_type_id'], $numTerms
+          );
+          $membershipParams['join_date'] = $current['join_date'];
+          $membershipParams['start_date'] = $current['is_current_member'] ? $current['start_date'] : ($dates['start_date'] ?? NULL);
+          $membershipParams['end_date'] = $dates['end_date'] ?? NULL;
+          $membershipParams['log_start_date'] = $dates['log_start_date'];
+          $membershipParams['source'] = $current['source'] ?? NULL;
+        }
       }
+      else {
+        $membershipParams['is_pay_later'] = $isPayLater;
+        if ($isPending) {
+          $membershipParams['status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Member_BAO_Membership', 'status_id', 'Pending');
+          $membershipParams['skipStatusCal'] = TRUE;
+        }
+        else {
+          $dates = CRM_Member_BAO_MembershipType::getDatesForMembershipType($contacts[$cid]['membership_type_id'], NULL, NULL, NULL, $numTerms);
+          foreach (['join_date', 'start_date', 'end_date'] as $field) {
+            $membershipParams[$field] = $dates[$field] ?? NULL;
+          }
+        }
+      }
+      $membershipParams = array_merge($membershipParams, $additionalParams);
+      $membership = CRM_Member_BAO_Membership::create($membershipParams);
+      $contactMembershipID = $membership->id;
 
       $lineItems['members'][$cid]['membershipId'] = $contactMembershipID;
 
@@ -505,7 +546,10 @@ class CRM_Memberships_Utils {
     //add Account details
     $contribution['contribution'] = $getContribution;
     $contribution['skipLineItem'] = TRUE;
-    CRM_Contribute_BAO_Contribution::recordFinancialAccounts($contribution, $getContribution);
+    $financialProcessor = new CRM_Contribute_BAO_FinancialProcessor(
+      $contribution['prevContribution'] ?? NULL, $getContribution, [], $contribution
+    );
+    $financialProcessor->recordFinancialAccounts($contribution);
 
     foreach ($lineItems['members'] as $cid => $contact) {
       $defaultParams['entity_id'] = $contact['membershipId'];
