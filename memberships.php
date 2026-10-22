@@ -316,12 +316,20 @@ function memberships_civicrm_alterMailParams(&$params, $context) {
     /*
      // Use follwing html in online reciept template above line item element
       {if $custom_membership_signup and $membershipDetails}
-         <tr><td colspan="2">{$membershipDetails}</td></tr>
+         <tr><td colspan="2">{$membershipDetails nofilter}</td></tr>
       {/if}
      */
-    if (($params['groupName'] == 'msg_tpl_workflow_contribution' && $params['valueName'] == 'contribution_online_receipt')) {
+    // CiviCRM 6 no longer passes groupName or tplParams.contributionPageId
+    // for the online receipt; identify it by workflow and look up the page.
+    $workflow = $params['workflow'] ?? $params['valueName'] ?? NULL;
+    if ($workflow === 'contribution_online_receipt') {
       $defaults = CRM_Memberships_Helper::getSettingsConfig();
-      if (in_array($params['tplParams']['contributionPageId'], $defaults['memberships_contribution_page_id'])) {
+      $contributionPageID = $params['tplParams']['contributionPageId'] ?? NULL;
+      $contributionID = $params['tplParams']['contributionID'] ?? NULL;
+      if (empty($contributionPageID) && $contributionID) {
+        $contributionPageID = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $contributionID, 'contribution_page_id');
+      }
+      if ($contributionPageID && in_array($contributionPageID, $defaults['memberships_contribution_page_id'])) {
         $session = CRM_Core_Session::singleton();
         if ($session->get('membershipTobWithContact')) {
           $template = CRM_Core_Smarty::singleton();
