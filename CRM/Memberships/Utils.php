@@ -29,15 +29,19 @@ class CRM_Memberships_Utils {
     $rab = [];
     $rba = [];
     foreach ($relationships as $r) {
+      // The selected label describes the logged-in user's side, e.g. "1_b_a"
+      // ("Parent of") means the user is contact B and the children are A.
       [$rType, $dir] = array_pad(explode("_", $r, 2), 2, NULL);
       if ($dir == NULL) {
         $rab[] = $rType;
         $rba[] = $rType;
       }
-      elseif ($dir = "a_b") {
+      elseif ($dir === "b_a") {
+        // $rab: user is contact_id_b, related contacts are contact_id_a.
         $rab[] = $rType;
       }
       else {
+        // $rba: user is contact_id_a, related contacts are contact_id_b.
         $rba[] = $rType;
       }
     }
