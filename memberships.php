@@ -71,6 +71,17 @@ function memberships_civicrm_preProcess($formName, &$form) {
       $session->set('membership_custom_signup', FALSE);
     }
   }
+  elseif ($formName == "CRM_Contribute_Form_Contribution_ThankYou") {
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      $params = $form->getVar('_params');
+      // show the processing amount if recurring payment is enabled.
+      if (!empty($params['is_recur']) && !empty($params['installments'])) {
+        $totalAmount = $form->get('amount');
+        CRM_Core_Smarty::singleton()->assign('paymentAmount', $totalAmount);
+      }
+    }
+  }
 }
 
 /**
@@ -200,6 +211,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
         $params['amount'] = $totalAmount;
         $form->set('amount', $totalAmount);
         $form->assign('amount', $totalAmount);
+        $form->setVar('_params', $params);
         CRM_Core_Smarty::singleton()->assign('amount', $totalAmount);
       }
       $session = CRM_Core_Session::singleton();
