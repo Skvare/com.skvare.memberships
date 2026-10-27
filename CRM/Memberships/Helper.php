@@ -467,12 +467,14 @@ class CRM_Memberships_Helper {
   /**
    * @param $familyContributionID
    * @param $membershipTobWithContact
+   * @param int|null $paymentProcessorID
+   *   Processor that took the payment.
    *
    * @return bool
    *   TRUE if the contribution's memberships have been processed (now or
    *   earlier), FALSE if its status does not allow processing yet.
    */
-  public static function processMembership($familyContributionID, $membershipTobWithContact) {
+  public static function processMembership($familyContributionID, $membershipTobWithContact, $paymentProcessorID = NULL) {
     // Membership line items are only added here, so their presence means the
     // contribution was already processed (e.g. the thank-you page reloaded).
     $alreadyProcessed = CRM_Core_DAO::singleValueQuery(
@@ -512,8 +514,8 @@ class CRM_Memberships_Helper {
       CRM_Memberships_Utils::createMemberships($familyContributionID,
         $lineItems, $membershipTobWithContact, $isPending, $isPayLater, $additionalParams);
 
-      // Add line items
-      CRM_Memberships_Utils::addLineItems($result, $lineItems);
+      // Add line items (and the payment, if core recorded none)
+      CRM_Memberships_Utils::addLineItems($result, $lineItems, $paymentProcessorID);
 
       return TRUE;
     }

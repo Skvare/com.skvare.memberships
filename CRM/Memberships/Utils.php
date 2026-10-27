@@ -536,17 +536,15 @@ class CRM_Memberships_Utils {
    *
    * @param $contributionId
    * @param $lineItems
+   * @param int|null $paymentProcessorID
+   *   Processor that took the payment, for the payment's financial account.
    */
-  public static function addLineItems($contribution, $lineItems) {
+  public static function addLineItems($contribution, $lineItems, $paymentProcessorID = NULL) {
 
     $defaultParams = [
       'entity_table' => "civicrm_membership",
       'contribution_id' => $contribution['id'],
     ];
-    // The contribution's financial transaction is recorded by core when the
-    // contribution is created/completed. Calling recordFinancialAccounts()
-    // again here added a second payment transaction for Completed
-    // contributions, so only the line items are added.
     foreach ($lineItems['members'] as $cid => $contact) {
       $defaultParams['entity_id'] = $contact['membershipId'];
       foreach ($contact['lineItems'] as $lineItem) {
@@ -563,6 +561,59 @@ class CRM_Memberships_Utils {
       $params['entity_id'] = $contribution['id'];
       $line = civicrm_api3('LineItem', 'create', $params);
     }
+
+    try {
+      self::recordMissingPayment($contribution['id'], $paymentProcessorID);
+    }
+    catch (CRM_Core_Exception $exception) {
+      Civi::log()->error('com.skvare.memberships: payment not recorded for contribution {contribution}: {message}', [
+        'contribution' => $contribution['id'],
+        'message' => $exception->getMessage(),
+      ]);
+    }
+  }
+
+  /**
+   * Record the payment of a Completed contribution that has none.
+   *
+   * memberships_civicrm_pre() removes the line items of the signup page's
+   * contribution, also when the processor completes it, and core records no
+   * payment for a Pending -> Completed change without line items (CRM-15296);
+   * only the processor fee is recorded. Now that the line items exist,
+   * Payment.create records the payment and creates and allocates their
+   * financial items. A contribution that already has a payment (e.g. created
+   * as Completed) is left alone, so the payment is never recorded twice.
+   *
+   * @param int $contributionID
+   * @param int|null $paymentProcessorID
+   */
+  public static function recordMissingPayment($contributionID, $paymentProcessorID = NULL) {
+    $contribution = \Civi\Api4\Contribution::get(FALSE)
+      ->addSelect('total_amount', 'paid_amount', 'trxn_id', 'receive_date', 'payment_instrument_id', 'contribution_status_id:name')
+      ->addWhere('id', '=', $contributionID)
+      ->execute()
+      ->first();
+    if (($contribution['contribution_status_id:name'] ?? NULL) !== 'Completed'
+      || $contribution['total_amount'] <= 0
+      || $contribution['paid_amount'] > 0) {
+      return;
+    }
+    $params = [
+      'contribution_id' => $contributionID,
+      'total_amount' => $contribution['total_amount'],
+      'trxn_id' => $contribution['trxn_id'],
+      'trxn_date' => $contribution['receive_date'],
+      'is_send_contribution_notification' => FALSE,
+    ];
+    // The processor's financial account and payment method, as core would
+    // have recorded them; otherwise the contribution's payment method.
+    if ($paymentProcessorID) {
+      $params['payment_processor_id'] = $paymentProcessorID;
+    }
+    else {
+      $params['payment_instrument_id'] = $contribution['payment_instrument_id'];
+    }
+    civicrm_api3('Payment', 'create', $params);
   }
 
   /**

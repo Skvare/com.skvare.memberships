@@ -34,7 +34,7 @@ Anonymous visitors see a login/registration prompt instead of the form.
 | 9 | `hook_civicrm_post` (Contribution) | Groups/tags for members linked to the contribution (see [accounting](memberships-and-accounting.md#groups-and-tags)). |
 | 10 | `hook_civicrm_postProcess` (Confirm) | Saves the new contribution ID in the session (`family_contributionID`). |
 | 11 | `hook_civicrm_alterMailParams` | Adds the membership table to the online receipt (if the template has the snippet). |
-| 12 | `hook_civicrm_buildForm` (ThankYou) | Adds `Preview.tpl`; processes memberships and line items for `family_contributionID`, applies groups/tags, then clears `family_contributionID` so a reload does nothing. |
+| 12 | `hook_civicrm_buildForm` (ThankYou) | Adds `Preview.tpl`; processes memberships and line items for `family_contributionID` (and records the payment of a Completed contribution, see [accounting](memberships-and-accounting.md#financial-records)), applies groups/tags, then clears `family_contributionID` so a reload does nothing. |
 
 ## When memberships are processed
 

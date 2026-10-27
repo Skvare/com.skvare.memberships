@@ -228,7 +228,7 @@ function memberships_civicrm_buildForm($formName, &$form) {
         // Process the Memebership once contribution is processed.
         $familyContributionID = $session->get('family_contributionID');
         if (!empty($familyContributionID)) {
-          $processed = CRM_Memberships_Helper::processMembership($familyContributionID, $membershipTobWithContact);
+          $processed = CRM_Memberships_Helper::processMembership($familyContributionID, $membershipTobWithContact, $form->_paymentProcessor['id'] ?? NULL);
           CRM_Memberships_Utils::addContactToGroupTag($familyContributionID);
           if ($processed) {
             // Reloading the thank-you page must not renew the memberships

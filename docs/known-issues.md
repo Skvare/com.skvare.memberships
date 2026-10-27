@@ -54,12 +54,32 @@ from the local copy of the FOIS database.
 
 ## Accounting
 
-* **No financial items on the first contribution's lines.** The line items
-  the extension adds to the signup contribution have no
+* **No financial items on older contributions' lines.** Before 1.1.1 the
+  line items the extension adds to the signup contribution had no
   `civicrm_financial_item` rows (core's own line, which would have them, is
   suppressed), so income-by-account reports and bookkeeping exports miss
-  them. Later installments created by the processor do have
-  them. Any fix should be agreed with whoever reconciles FOIS accounts.
+  them. 1.1.1 creates them for single payments recorded on the thank-you page
+  (see [accounting](memberships-and-accounting.md#financial-records));
+  existing contributions were not changed.
+* **Signups completed on 6.16 before 1.1.1 have no payment.** Between the
+  CiviCRM 6.16 upgrade and 1.1.1, a Completed single-payment signup has no
+  payment transaction (only the processor fee). To list them:
+
+  ```sql
+  SELECT c.id, c.total_amount, c.receive_date
+  FROM civicrm_contribution c
+  WHERE c.contribution_status_id = 1 AND c.total_amount > 0
+    AND c.contribution_page_id IN (/* configured signup pages */)
+    AND NOT EXISTS (
+      SELECT 1 FROM civicrm_entity_financial_trxn eft
+      INNER JOIN civicrm_financial_trxn ft ON ft.id = eft.financial_trxn_id
+      WHERE eft.entity_table = 'civicrm_contribution'
+        AND eft.entity_id = c.id AND ft.is_payment = 1);
+  ```
+
+  Each can be repaired with `CRM_Memberships_Utils::recordMissingPayment($id)`
+  (records the payment against the contribution's payment method; agree
+  with whoever reconciles FOIS accounts first).
 * **Historical discount lines point at a membership.** Before 1.1.0 the
   discount lines were saved with `entity_table = 'civicrm_contribution'` but
   `entity_id` = the last child's membership ID. 1.1.0 fixes new ones; existing
@@ -102,5 +122,9 @@ from the local copy of the FOIS database.
   `CRM_Member_BAO_MembershipType::getAllMembershipTypes()` to the current
   domain, but the shared "Membership Amount" price set has options for every
   domain's types. Loading that price set's metadata (e.g. rendering a receipt
-  for a contribution with membership lines) raises one PHP warning per
-  foreign type in `CRM/Financial/BAO/Order.php` (~194 per render locally).
+  for a contribution with membership lines, or `Payment.create` for an
+  installment) raises three PHP warnings per foreign type in
+  `CRM/Financial/BAO/Order.php`; where warnings are turned into errors the
+  payment stops. `civicrm_membership_type_other_domain.patch` makes
+  `getMembershipType()` fall back to every domain's types for an ID that is
+  not in the current domain (listings stay per domain).

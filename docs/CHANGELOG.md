@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.1 — unreleased
+
+### Fixed
+
+* **Completed signups had no payment.** On CiviCRM 6.16 the processor
+  completes the signup contribution while it has no line items, so core
+  records no payment for it (only the processor fee); removing
+  `recordFinancialAccounts()` in 1.1.0 left the contribution Completed with
+  nothing paid. After adding the line items the extension now records the
+  payment with `Payment.create` when a Completed contribution has none, which
+  also creates and allocates the line items' financial items. Contributions
+  that already have a payment are not changed.
+
 ## 1.1.0 — 2026-10-22
 
 CiviCRM 6.16 / PHP 8.3 review. Requires CiviCRM 6.16+.
@@ -11,7 +24,9 @@ CiviCRM 6.16 / PHP 8.3 review. Requires CiviCRM 6.16+.
   line items. A contribution is now processed once.
 * **Duplicate payment transaction.** Adding the line items called
   `recordFinancialAccounts()` again, which on CiviCRM 6.16 recorded a second
-  payment transaction for Completed contributions. The call was removed.
+  payment transaction for Completed contributions. The call was removed
+  (but see 1.1.1: for the signup page's own contributions it was the only
+  payment).
 * **Line items removed from unrelated contributions.** After visiting the
   signup page, any contribution created or edited in the same browser session
   (event registration, back-office entry) lost its line items. Only the

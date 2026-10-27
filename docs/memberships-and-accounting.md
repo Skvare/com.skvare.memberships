@@ -42,10 +42,22 @@ are created by the payment processor from the recurring contribution.
 
 ## Financial records
 
-The payment's financial transaction is recorded by core when the contribution
-is created or completed. The extension does not add financial transactions.
-The line items it adds on the first contribution have no financial items (see
-[known issues](known-issues.md)).
+Core records no payment when the processor completes the signup
+contribution: the extension has removed its line items (`hook_civicrm_pre`),
+and core skips the payment of a Pending -> Completed change without line
+items (CRM-15296). Only the processor fee, if any, is recorded.
+
+After adding the line items, `CRM_Memberships_Utils::recordMissingPayment()`
+records the payment with `Payment.create` if the contribution is Completed
+and has no payment yet: one payment for the contribution total, to the
+processor's financial account, allocated to financial items it creates for
+the extension's line items (Paid). `Payment.create` also adds a "Payment"
+activity. A contribution that already has a payment is not changed, so a
+payment is never recorded twice.
+
+Pending contributions (pay-later, first installment) get no payment here;
+their line items get financial items when the payment is recorded later with
+`Payment.create` (core creates any that are missing).
 
 ## Groups and tags
 
