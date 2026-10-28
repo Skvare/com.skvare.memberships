@@ -154,7 +154,7 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         $form->assign('total_amount', $calculatedAmount);
         // update the fee amount based on different discount..
         foreach ($amount as $fee_id => &$fee) {
-          if (!is_array($fee['options'])) {
+          if (!is_array($fee['options']) || ($fee['name'] ?? '') === 'other_amount') {
             continue;
           }
 
