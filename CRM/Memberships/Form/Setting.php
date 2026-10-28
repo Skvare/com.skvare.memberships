@@ -11,7 +11,7 @@ class CRM_Memberships_Form_Setting extends CRM_Core_Form {
   const NUM_DISCOUNT = 6;
 
   public function buildQuickForm() {
-    $groups = ['' => '-- select --'] + CRM_Core_PseudoConstant::nestedGroup();
+    $groups = ['' => '-- select --'] + CRM_Core_PseudoConstant::nestedGroup(textFormat: 'plain');
     $tags = ['' => '-- select --'] + CRM_Core_PseudoConstant::get('CRM_Core_DAO_EntityTag', 'tag_id', ['onlyActive' => FALSE]);
     $this->add('select', 'memberships_financial_type_id', 'Financial type',
       CRM_Contribute_BAO_Contribution::buildOptions('financial_type_id', 'search'),
