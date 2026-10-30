@@ -153,6 +153,20 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         $form->assign('originalTotalAmount', $originalTotalAmount);
         $session->set('originalTotalAmount', $originalTotalAmount);
         $form->assign('total_amount', $calculatedAmount);
+
+        // Discounts can take the total to zero or below. Such a signup can't
+        // be submitted: the page warns, buildForm disables the submit button
+        // and validateForm refuses it.
+        $noAmountDueMessage = NULL;
+        $undiscountedAmount = array_sum(array_column($membershipTobWithContact, 'original_amount'));
+        if (!empty($membershipTobWithContact) && $calculatedAmount <= 0 && $undiscountedAmount > 0) {
+          $noAmountDueMessage = E::ts('With your discounts the total is %1. A signup with nothing to pay cannot be completed on this page; please contact us to complete it.', [
+            1 => CRM_Utils_Money::format($calculatedAmount),
+          ]);
+        }
+        $form->assign('membershipsNoAmountDue', $noAmountDueMessage);
+        $form->set('membershipsNoAmountDue', $noAmountDueMessage);
+
         // update the fee amount based on different discount..
         foreach ($amount as $fee_id => &$fee) {
           if (!is_array($fee['options']) || ($fee['name'] ?? '') === 'other_amount') {
@@ -188,6 +202,12 @@ function memberships_civicrm_buildForm($formName, &$form) {
     // field to defined number of installment.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id']) && CRM_Utils_System::isUserLoggedIn()) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
+      // Discounts took the total to zero or below (see buildAmount).
+      if ($form->get('membershipsNoAmountDue') && $form->elementExists('buttons')) {
+        foreach ($form->getElement('buttons')->getElements() as $button) {
+          $button->updateAttributes(['disabled' => 'disabled']);
+        }
+      }
       if ($form->_values['is_recur']) {
         if (empty($form->_values['is_recur_installments_number'])) {
           $is_recur_installments_number = 3;
@@ -259,6 +279,21 @@ function memberships_civicrm_buildForm($formName, &$form) {
       $form->add('select', 'is_recur_installments_number', ts('Maximum Offer installments'), $numericOptions, FALSE, ['class' => 'required']);
     }
 
+  }
+}
+
+/**
+ * Implements hook_civicrm_validateForm().
+ */
+function memberships_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+    $defaults = CRM_Memberships_Helper::getSettingsConfig();
+    if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      // The submit button is disabled, but a submission can still be sent.
+      if ($noAmountDueMessage = $form->get('membershipsNoAmountDue')) {
+        $errors['_qf_default'] = $noAmountDueMessage;
+      }
+    }
   }
 }
 

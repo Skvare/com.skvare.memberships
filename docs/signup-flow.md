@@ -12,7 +12,10 @@
 
    The page amount is set to the family total. If no child is waiting for
    payment the table says "No Child Available for Membership Signup." (the
-   form can still be submitted, see [known issues](known-issues.md)).
+   form can still be submitted, see [known issues](known-issues.md)). If
+   discounts bring the total to 0.00 or below, a warning is shown under the
+   table and the form can't be submitted (see
+   [fees and discounts](fees-and-discounts.md#family-discounts)).
 2. **Confirm page.** The same table and the amount being charged now.
 3. **Thank-you page.** The same table. While this page is built the
    memberships, line items and groups/tags are processed.
@@ -25,8 +28,9 @@ Anonymous visitors see a login/registration prompt instead of the form.
 | --- | --- | --- |
 | 1 | `hook_civicrm_preProcess` (Main) | For a configured page, resets the signup session values and sets `membership_custom_signup` = TRUE and `membership_custom_signup_page` = page ID. For any other contribution page sets the flag to FALSE. |
 | 2 | `hook_civicrm_alterTemplateFile` (Main) | Anonymous user on a configured page → `AccessDeniedMembership.tpl` with the CMS login URL. |
-| 3 | `hook_civicrm_buildAmount` (Main, logged in) | Builds the related-contact list, active members and waiting members; calculates fees and family discounts; stores them in the session; sets every option on the page to the total. |
-| 4 | `hook_civicrm_buildForm` (Main) | Adds `Preview.tpl` (tables). If the page is recurring, replaces `installments` with a 2…N select and adds `RecuringHelp.tpl`. |
+| 3 | `hook_civicrm_buildAmount` (Main, logged in) | Builds the related-contact list, active members and waiting members; calculates fees and family discounts; stores them in the session; sets every option on the page to the total. If discounts bring the total to 0.00 or below, sets the warning `membershipsNoAmountDue` (template and form). |
+| 4 | `hook_civicrm_buildForm` (Main) | Adds `Preview.tpl` (tables). With `membershipsNoAmountDue` set, disables the submit button. If the page is recurring, replaces `installments` with a 2…N select and adds `RecuringHelp.tpl`. |
+| 4a | `hook_civicrm_validateForm` (Main) | With `membershipsNoAmountDue` set, refuses the submission with that message. |
 | 5 | `hook_civicrm_postProcess` (Main) | With installments chosen, sets the amount to the per-installment amount (rounded **up** to the cent). |
 | 6 | `hook_civicrm_buildForm` (Confirm) | Adds `Preview.tpl`. |
 | 7 | Core Confirm (FOIS-patched) | Charges the amount calculated by the extension instead of the page amount. |

@@ -72,12 +72,18 @@
             </tr>
         {/foreach}
         {/if}
-        {if $total_amount}
+        {if $total_amount || $membershipsNoAmountDue}
         <tr class="{cycle values="odd-row,even-row"}">
             <td colspan="3">{ts}Total{/ts}</td><td>{$total_amount|crmMoney}</td>
         </tr>
         {/if}
     </table>
+    {if $membershipsNoAmountDue}
+    <div class="messages warning no-popup">
+        <i class="crm-i fa-exclamation-triangle" role="img" aria-hidden="true"></i>
+        {$membershipsNoAmountDue}
+    </div>
+    {/if}
     {else}
     <div class="messages status continue_instructions-section">
         <p>{ts}No Child Available for Membership Signup.{/ts}</p>
