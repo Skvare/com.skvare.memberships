@@ -85,6 +85,30 @@ class CRM_Memberships_Helper {
     return $cleanFields;
   }
 
+  /**
+   * Whether a contact's answer in the JCC field is Yes.
+   *
+   * The field can be a Yes/No field (1 or 0) or a field with options, where
+   * No is a value too (2 on "JCC Discount?"), so compare the option label.
+   *
+   * @param string $fieldName
+   *   The field as stored in the config, e.g. custom_12.
+   * @param mixed $value
+   *
+   * @return bool
+   */
+  public static function isJccMember($fieldName, $value) {
+    if ($value === NULL || $value === '' || $value === []) {
+      return FALSE;
+    }
+    if (!preg_match('/^custom_(\d+)$/', (string) $fieldName, $matches)) {
+      return !empty($value);
+    }
+    $label = strtolower(trim(CRM_Core_BAO_CustomField::displayValue($value, (int) $matches[1])));
+
+    return in_array($label, ['yes', strtolower(ts('Yes'))], TRUE);
+  }
+
   public static function getMembershipFee($membershipTypeID, $contactID,
                                           $currentUserID, $childNumber,
                                           $isJccMember = FALSE) {
@@ -422,6 +446,9 @@ class CRM_Memberships_Helper {
     }
 
     $originalTotalAmount = $totalAmount;
+    // Each discount is a share of the sub-total, but together they can't take
+    // the total below zero: each one is capped at what is left.
+    $remainingAmount = $originalTotalAmount;
     $discountOther = [];
     if (!empty($defaultsConfig['memberships_financial_discount_group'])
       && !empty($defaultsConfig['memberships_financial_discount_group_discount_amount'])
@@ -437,6 +464,8 @@ class CRM_Memberships_Helper {
         }
         [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount
         ($originalTotalAmount, $contactResult[$defaultsConfig['memberships_financial_discount_group_discount_amount']], $type, 'Approved Financial Aid');
+        $discountAmount = max($discountAmount, -$remainingAmount);
+        $remainingAmount = round($remainingAmount + $discountAmount, 2);
         $discountOther['1']['amount'] = $discountAmount;
         $discountOther['1']['label'] = $newLabel;
         $discountOther['1']['entity_table'] = 'civicrm_contribution';
@@ -452,6 +481,8 @@ class CRM_Memberships_Helper {
       if (in_array($defaultsConfig['memberships_special_discount_group'], $groupContact)) {
         $type = $defaultsConfig['memberships_special_discount_type'];
         [$newTotalAmount, $discountAmount, $newLabel] = self::_calc_discount($originalTotalAmount, $defaultsConfig['memberships_special_discount_amount'], $type, 'Subsidy');
+        $discountAmount = max($discountAmount, -$remainingAmount);
+        $remainingAmount = round($remainingAmount + $discountAmount, 2);
         $discountOther['2']['amount'] = $discountAmount;
         $discountOther['2']['label'] = $newLabel;
         $discountOther['2']['entity_table'] = 'civicrm_contribution';

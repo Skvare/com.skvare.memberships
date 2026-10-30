@@ -21,7 +21,7 @@ configuration.
 | Tag Contact on partial payment | `memberships_tag_partial_paid` | Tag, same rule as the partial-payment group. |
 | Special Discount Group / amount / type | `memberships_special_discount_group`, `_amount`, `_type` | A "Subsidy" discount for parents in the group: percent (1) or fixed amount (2). |
 | Financial assistance/discount: group, field for amount, field for type | `memberships_financial_discount_group`, `_discount_amount`, `_discount_type` | An "Approved Financial Aid" discount for parents in the group. Amount and type are read from the parent's fields (custom fields); a type value of `fixed_amount` means a fixed amount, anything else a percentage. |
-| JCC Field Name | `memberships_jcc_field` | If this field is not empty on the parent, the JCC prices are used. |
+| JCC Field Name | `memberships_jcc_field` | If the parent's answer in this field is Yes, the JCC prices are used. For a custom field the answer's label is compared, so a Yes/No field (1/0) and a field with Yes and No options (e.g. 1/2) both work; any other answer, No or empty, gives the normal prices. |
 | Membership Match Condition (field, operator, value) | `memberships_type_field`, `_operator`, `_condition` | Extra filter on the waiting memberships. Only equality is applied (`field = value`); the operator is not used. |
 | Sort Child using Siblings Number Field | `memberships_siblings_number` | Orders children by this field (ascending, empty last) before numbering them Child 1, 2, … |
 

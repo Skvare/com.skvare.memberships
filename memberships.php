@@ -130,8 +130,9 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         // check parent custom field to JCC Discounted Fee.
         $isJccMember = FALSE;
         $pageFinancialTypeID = $_values['financial_type_id'];
-        if (!empty($defaults['memberships_jcc_field']) && !empty($allRelatedContact[$currentContactID][$defaults['memberships_jcc_field']])) {
-          $isJccMember = TRUE;
+        if (!empty($defaults['memberships_jcc_field'])) {
+          $isJccMember = CRM_Memberships_Helper::isJccMember($defaults['memberships_jcc_field'],
+            $allRelatedContact[$currentContactID][$defaults['memberships_jcc_field']] ?? NULL);
         }
         unset($allRelatedContact[$currentContactID]);
         unset($membershipTobWithContact[$currentContactID]);

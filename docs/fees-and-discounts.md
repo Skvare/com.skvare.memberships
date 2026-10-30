@@ -17,7 +17,7 @@ For the child's membership type the extension starts from the **Default Fee**
 and walks the discount sets in order (1 → 5). The first set that has a value
 for this child number *and* whose dates cover today wins:
 
-* If the parent is a JCC member (JCC field not empty) and the set has a JCC
+* If the parent is a JCC member (JCC field answered Yes) and the set has a JCC
   value for this child number, that JCC value is used.
 * Otherwise the set's "Child N" value is used.
 
@@ -56,6 +56,13 @@ Each becomes a negative line on the contribution, labelled e.g.
 "Approved Financial Aid ($ 360.00)" or "Subsidy (10% on $ 1,200.00)". The
 group test uses the parent's static group memberships (smart groups are not
 included). The total is rounded to cents.
+
+Together the discounts never take the total below zero: each one is capped at
+what is left of the sub-total, financial aid first. With a sub-total of 200,
+financial aid of 150 (fixed) and a subsidy of 100 (fixed), the lines are
+−150 and −50 and the total is **0.00**; the subsidy line keeps its label
+"Subsidy ($ 100.00)". On a 0.00 total core asks for no card details and
+skips the payment processor.
 
 ## Installments
 
