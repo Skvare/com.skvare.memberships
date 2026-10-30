@@ -72,16 +72,16 @@
             </tr>
         {/foreach}
         {/if}
-        {if $total_amount || $membershipsNoAmountDue}
+        {if $total_amount || $membershipsNothingDue}
         <tr class="{cycle values="odd-row,even-row"}">
             <td colspan="3">{ts}Total{/ts}</td><td>{$total_amount|crmMoney}</td>
         </tr>
         {/if}
     </table>
-    {if $membershipsNoAmountDue}
-    <div class="messages warning no-popup">
-        <i class="crm-i fa-exclamation-triangle" role="img" aria-hidden="true"></i>
-        {$membershipsNoAmountDue}
+    {if $membershipsNothingDue}
+    <div class="messages status no-popup">
+        <i class="crm-i fa-info-circle" role="img" aria-hidden="true"></i>
+        {ts}Your discounts cover the full fee; there is nothing to pay, so no card details are needed.{/ts}
     </div>
     {/if}
     {else}

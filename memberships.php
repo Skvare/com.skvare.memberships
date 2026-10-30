@@ -154,18 +154,15 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         $session->set('originalTotalAmount', $originalTotalAmount);
         $form->assign('total_amount', $calculatedAmount);
 
-        // Discounts can take the total to zero or below. Such a signup can't
-        // be submitted: the page warns, buildForm disables the submit button
-        // and validateForm refuses it.
-        $noAmountDueMessage = NULL;
-        $undiscountedAmount = array_sum(array_column($membershipTobWithContact, 'original_amount'));
-        if (!empty($membershipTobWithContact) && $calculatedAmount <= 0 && $undiscountedAmount > 0) {
-          $noAmountDueMessage = E::ts('With your discounts the total is %1. A signup with nothing to pay cannot be completed on this page; please contact us to complete it.', [
-            1 => CRM_Utils_Money::format($calculatedAmount),
-          ]);
-        }
-        $form->assign('membershipsNoAmountDue', $noAmountDueMessage);
-        $form->set('membershipsNoAmountDue', $noAmountDueMessage);
+        // Discounts can bring the total to 0.00 (never below, see
+        // prepareMemberList()). Core completes such a signup without a
+        // payment, so buildForm and validateForm offer no instalments.
+        $isNothingDue = $calculatedAmount <= 0;
+        $form->assign('membershipsNothingDue', $isNothingDue);
+        $form->set('membershipsNothingDue', $isNothingDue);
+        // With no child waiting there is nothing to sign up for: buildForm
+        // disables the submit button and validateForm refuses the form.
+        $form->set('membershipsNoChild', empty($membershipTobWithContact));
 
         // update the fee amount based on different discount..
         foreach ($amount as $fee_id => &$fee) {
@@ -202,8 +199,13 @@ function memberships_civicrm_buildForm($formName, &$form) {
     // field to defined number of installment.
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id']) && CRM_Utils_System::isUserLoggedIn()) {
       CRM_Core_Region::instance('page-body')->add(['template' => 'CRM/Memberships/Preview.tpl']);
-      // Discounts took the total to zero or below (see buildAmount).
-      if ($form->get('membershipsNoAmountDue') && $form->elementExists('buttons')) {
+      // Nothing to pay (see buildAmount): a $0 recurring series must not be
+      // created, so the instalments checkbox can't be ticked.
+      if ($form->get('membershipsNothingDue') && $form->elementExists('is_recur')) {
+        $form->getElement('is_recur')->updateAttributes(['disabled' => 'disabled']);
+      }
+      // No child waiting (see buildAmount): nothing to submit.
+      if ($form->get('membershipsNoChild') && $form->elementExists('buttons')) {
         foreach ($form->getElement('buttons')->getElements() as $button) {
           $button->updateAttributes(['disabled' => 'disabled']);
         }
@@ -289,9 +291,14 @@ function memberships_civicrm_validateForm($formName, &$fields, &$files, &$form, 
   if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (in_array($form->getVar('_id'), $defaults['memberships_contribution_page_id'])) {
+      // The instalments checkbox is disabled, but a submission can still
+      // tick it.
+      if ($form->get('membershipsNothingDue') && !empty($fields['is_recur'])) {
+        $errors['is_recur'] = E::ts('There is nothing to pay, so the payment cannot be divided into instalments.');
+      }
       // The submit button is disabled, but a submission can still be sent.
-      if ($noAmountDueMessage = $form->get('membershipsNoAmountDue')) {
-        $errors['_qf_default'] = $noAmountDueMessage;
+      if ($form->get('membershipsNoChild')) {
+        $errors['_qf_default'] = E::ts('No child is waiting for membership signup, so there is nothing to submit.');
       }
     }
   }

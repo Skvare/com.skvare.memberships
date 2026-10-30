@@ -10,8 +10,8 @@ from the local copy of the FOIS database.
 1. **$0 contributions when nothing is due.** If a parent has no waiting
    children the page shows "No Child Available" but can still be submitted,
    creating a $0 contribution with no memberships (two seen on page 259:
-   78586, 86378). Recommendation: add a `hook_civicrm_validateForm` error on
-   configured pages when the session list is empty.
+   78586, 86378). Fixed in 1.1.1: the submit button is disabled and
+   `hook_civicrm_validateForm` refuses the form when no child is waiting.
 2. **Processing depends on the thank-you page.** Memberships, line items and
    groups/tags are only created when the parent's browser renders the
    thank-you page in the same session. If that never happens (browser closed,
@@ -26,8 +26,9 @@ from the local copy of the FOIS database.
 4. **Discount sets need a date.** A set with neither start nor end date never
    applies; this is easy to miss when entering a permanent discount.
 5. **Family discounts are not combined.** Financial aid and subsidy are both
-   calculated on the sub-total and each is limited to that sub-total, so
-   together they can take the total below zero.
+   calculated on the sub-total. Fixed in 1.1.1: together they no longer take
+   the total below zero; the second is capped at what is left (see
+   [fees and discounts](fees-and-discounts.md#family-discounts)).
 6. **Match condition operator is ignored.** The "Membership Match Condition"
    always filters with `=`.
 7. **Group checks ignore smart groups.** The financial-aid and special

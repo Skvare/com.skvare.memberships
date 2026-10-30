@@ -63,11 +63,12 @@ financial aid of 150 (fixed) and a subsidy of 100 (fixed), the lines are
 −150 and −50 and the total is **0.00**; the subsidy line keeps its label
 "Subsidy ($ 100.00)".
 
-When discounts bring the total to 0.00 or below (and the children's Default
-Fees add up to more than 0), the signup can't be submitted: the main page
-shows a warning under the table, the submit button is disabled, and a
-submission sent anyway is refused with the same message. A total of 0.00
-because no fee is configured is not affected.
+A signup with a total of 0.00 (e.g. 100% financial aid) needs no payment:
+core asks for no card details and completes the contribution without
+calling the processor. The main page says so under the table ("Your
+discounts cover the full fee; there is nothing to pay, so no card details
+are needed."). Instalments are not offered on a 0.00 total: the
+checkbox is disabled, and a submission that ticks it anyway is refused.
 
 ## Installments
 

@@ -12,6 +12,16 @@
   payment with `Payment.create` when a Completed contribution has none, which
   also creates and allocates the line items' financial items. Contributions
   that already have a payment are not changed.
+* **Family discounts could take the total below zero.** Financial aid and
+  subsidy were each taken off the sub-total, so together they could exceed
+  it; the page showed a negative total and core refused the payment
+  ("Contribution can not be less than zero"). Each discount is now capped at
+  what is left, so the total stops at 0.00 and the signup completes without
+  a payment. Installments are not offered on a 0.00 total.
+* **$0 contributions when no child was waiting.** The page said "No Child
+  Available for Membership Signup." but could still be submitted, creating a
+  $0 contribution with no memberships. The submit button is now disabled and
+  the form is refused.
 
 ## 1.1.0 — 2026-10-22
 
