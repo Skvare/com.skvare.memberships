@@ -640,7 +640,8 @@ class CRM_Memberships_Utils {
 
       foreach ($resultPriceFields['values'] as $priceFields) {
         foreach ($priceFields['api.PriceFieldValue.get']['values'] as $priceField) {
-          if ($priceField['membership_type_id'] == $contact['membership_type_id']) {
+          // API3 leaves membership_type_id out for options without one.
+          if (($priceField['membership_type_id'] ?? NULL) == $contact['membership_type_id']) {
             $priceFieldDetails = self::getPriceFees($contact['membership_type_id']);
             $item = [];
             $item['0'] = [];

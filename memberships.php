@@ -125,11 +125,12 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         }
         // get contact having Pending membership records
         $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts);
-        $_values = $form->getVar('_values');
 
         // check parent custom field to JCC Discounted Fee.
         $isJccMember = FALSE;
-        $pageFinancialTypeID = $_values['financial_type_id'];
+        // Since 6.x this hook also runs while core builds the order, before
+        // the form's _values are loaded; this loads the page when needed.
+        $pageFinancialTypeID = $form->getContributionPageValue('financial_type_id');
         if (!empty($defaults['memberships_jcc_field'])) {
           $isJccMember = CRM_Memberships_Helper::isJccMember($defaults['memberships_jcc_field'],
             $allRelatedContact[$currentContactID][$defaults['memberships_jcc_field']] ?? NULL);

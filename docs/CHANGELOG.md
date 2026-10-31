@@ -4,6 +4,13 @@
 
 ### Fixed
 
+* **PHP warnings on the signup page.** `makeLineItemArray2()` read
+  `membership_type_id` of every option in the default membership price set,
+  which API3 leaves out when an option has none ("Undefined array key"), and
+  `memberships_civicrm_buildAmount()` read the page's financial type from
+  `_values`, which is not loaded yet when CiviCRM 6.x first calls the hook
+  ("Trying to access array offset on null"); it now uses
+  `getContributionPageValue()`.
 * **Completed signups had no payment.** On CiviCRM 6.16 the processor
   completes the signup contribution while it has no line items, so core
   records no payment for it (only the processor fee); removing
