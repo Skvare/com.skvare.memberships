@@ -114,9 +114,13 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
         // get related contact of logged in user based on relationship type
         // configured on setting pagg
         $allRelatedContact = CRM_Memberships_Utils::relatedContactsListing($form);
+        // In test-drive mode (action=preview) the page works on the
+        // children's test memberships, so a test payment never changes
+        // their live ones.
+        $isTest = $form->isTest();
         // get contact having active membership records
         $existingActiveMembershipContacts =
-          CRM_Memberships_Helper::getActiveMemberships($allRelatedContact, $currentContactID);
+          CRM_Memberships_Helper::getActiveMemberships($allRelatedContact, $currentContactID, $isTest);
         if (!empty($existingActiveMembershipContacts)) {
           $form->assign('existingActiveMembershipContacts', $existingActiveMembershipContacts);
         }
@@ -124,7 +128,7 @@ function memberships_civicrm_buildAmount($pageType, &$form, &$amount) {
           $form->assign('existingActiveMembershipContacts', false);
         }
         // get contact having Pending membership records
-        $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts);
+        $membershipTobWithContact = CRM_Memberships_Helper::getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts, $isTest);
 
         // check parent custom field to JCC Discounted Fee.
         $isJccMember = FALSE;

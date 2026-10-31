@@ -443,7 +443,10 @@ class CRM_Memberships_Utils {
    * @return mixed
    */
   public static function createMemberships($memberContributionID, array &$lineItems, array $contacts, $isPending = FALSE, $isPayLater = NULL, $additionalParams = []) {
-    $isTest = FALSE;
+    // A test-drive (action=preview) payment works on the children's test
+    // memberships, which the page listed in test mode; a live payment on
+    // their live ones.
+    $isTest = (bool) CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $memberContributionID, 'is_test');
     $numTerms = 1;
     // format the custom field to get used while processing usign CiviCRM core function, not using api here for
     // creating or renewing membership, as this function deal with all the things..
@@ -459,6 +462,7 @@ class CRM_Memberships_Utils {
           'version' => '3',
           'contact_id' => $cid,
           'membership_type_id' => $contacts[$cid]['membership_type_id'],
+          'is_test' => (int) $isTest,
           'check_permissions' => 0,
         ];
 
@@ -854,9 +858,14 @@ class CRM_Memberships_Utils {
 
   public static function addContactToGroupTag($contributionID) {
     $result = civicrm_api3('Contribution', 'getsingle', [
-      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'contact_id', 'contribution_recur_id', 'contribution_page_id'],
+      'return' => ["contribution_status_id", "is_pay_later", 'total_amount', 'contact_id', 'contribution_recur_id', 'contribution_page_id', 'is_test'],
       'id' => $contributionID,
     ]);
+    // Groups and tags are live data on the real contacts: a test payment
+    // must not change them.
+    if (!empty($result['is_test'])) {
+      return;
+    }
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     if (is_array($defaults['memberships_contribution_page_id']) && in_array($result['contribution_page_id'], $defaults['memberships_contribution_page_id'])) {
       $resultMembership = civicrm_api3('MembershipPayment', 'get', [

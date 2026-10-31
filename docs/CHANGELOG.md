@@ -4,6 +4,14 @@
 
 ### Fixed
 
+* **A test-drive payment activated the real membership.** In test-drive mode
+  (`action=preview`, which core allows on any active page) the page listed
+  and paid for the children's live memberships, so confirming the test
+  payment activated them. The page now uses the mode's memberships: test
+  mode lists the children's test (`is_test = 1`) memberships and active test
+  memberships, and a test contribution creates or renews test memberships
+  only, without adding groups or tags. Live mode is unchanged.
+
 * **PHP warnings on the signup page.** `makeLineItemArray2()` read
   `membership_type_id` of every option in the default membership price set,
   which API3 leaves out when an option has none ("Undefined array key"), and

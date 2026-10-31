@@ -20,9 +20,11 @@ from the local copy of the FOIS database.
    point (e.g. `hook_civicrm_post` on the contribution or an
    `civi.order.complete` listener) and store the child list on the
    contribution instead of the session.
-3. **Test-mode signups create live memberships.** `createMemberships()` always
-   uses `is_test = FALSE`, so a test (preview) contribution creates or renews
-   real memberships.
+3. **Test-mode signups create live memberships.** Fixed in 1.1.1: in
+   test-drive mode (`action=preview`) the page lists the children's test
+   (`is_test = 1`) memberships and the test payment creates or renews test
+   memberships only, without groups or tags. To test a signup, the children
+   need test Pending memberships; the webform creates live ones.
 4. **Discount sets need a date.** A set with neither start nor end date never
    applies; this is easy to miss when entering a permanent discount.
 5. **Family discounts are not combined.** Financial aid and subsidy are both

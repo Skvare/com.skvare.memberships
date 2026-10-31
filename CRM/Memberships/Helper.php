@@ -309,10 +309,12 @@ class CRM_Memberships_Helper {
    *
    * @param $allRelatedContact
    * @param $currentContactID
+   * @param bool $isTest
+   *   Look at test memberships (the page is in test-drive mode).
    * @return array
    * @throws CRM_Core_Exception
    */
-  public static function getActiveMemberships($allRelatedContact, $currentContactID) {
+  public static function getActiveMemberships($allRelatedContact, $currentContactID, $isTest = FALSE) {
     $membershipActiveContacts = [];
     if (array_key_exists($currentContactID, $allRelatedContact)) {
       unset($allRelatedContact[$currentContactID]);
@@ -326,7 +328,7 @@ class CRM_Memberships_Helper {
       $params['membership_type_id'] = ['IN' => $defaults['memberships_membership_types']];
     }
     $params['active_only'] = 1;
-    $params['is_test'] = 0;
+    $params['is_test'] = (int) $isTest;
 
 
     foreach ($allRelatedContact as $cid => $contactDetails) {
@@ -352,14 +354,18 @@ class CRM_Memberships_Helper {
    *
    * @param $allRelatedContact
    * @param $existingActiveMembershipContacts
+   * @param bool $isTest
+   *   Look at test memberships (the page is in test-drive mode).
    * @return array
    * @throws CRM_Core_Exception
    */
-  public static function getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts) {
+  public static function getMembershipTobeProcessed($allRelatedContact, $existingActiveMembershipContacts, $isTest = FALSE) {
     $membershipContact = [];
     $defaults = CRM_Memberships_Helper::getSettingsConfig();
     $params = [
       'sequential' => 1,
+      // API3 Membership.get returns test and live memberships alike.
+      'is_test' => (int) $isTest,
       'options' => ['limit' => 1],
     ];
     if (!empty($defaults['memberships_membership_types'])) {
