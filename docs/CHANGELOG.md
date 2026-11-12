@@ -4,6 +4,17 @@
 
 ### Fixed
 
+* **Each installment's payment was allocated the family's full fees.** An
+  installment contribution carried line items for the full family fees, and
+  core allocates a payment to the line items in proportion to the
+  contribution's balance, so a payment of 460.00 was allocated 920.00. The
+  line items of an installment contribution are now scaled to its amount;
+  the processor's later installments copy them. One-time payments are
+  unchanged.
+* **A child's fee could go below zero.** The sibling discount was subtracted
+  from the child's price without a floor (a JCC price of 1.00 with a sibling
+  discount of 10.00 gave -9.00, and core refused the payment). The sibling
+  discount is now capped at the price.
 * **A test-drive payment activated the real membership.** In test-drive mode
   (`action=preview`, which core allows on any active page) the page listed
   and paid for the children's live memberships, so confirming the test

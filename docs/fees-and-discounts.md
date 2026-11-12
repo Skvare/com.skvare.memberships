@@ -42,6 +42,10 @@ valid dates gives a sibling discount, which is subtracted from the price:
 fee = price − sibling discount
 ```
 
+The sibling discount is capped at the price, so a child's fee is never below
+0.00 (a JCC price of 1.00 with a sibling discount of 10.00 gives 0.00, not
+-9.00).
+
 ## Family discounts
 
 After the per-child fees are added up (the **sub-total**), up to two

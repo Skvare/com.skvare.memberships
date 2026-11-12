@@ -190,7 +190,11 @@ class CRM_Memberships_Helper {
       }
     }
     $discountAmount = $defaultFee - $sellFee;
-    $sellFee = $sellFee - $siblingDiscountFee;
+    // The sibling discount can't take a child's fee below zero (e.g. a JCC
+    // price of 1.00 with a sibling discount of 10.00 gave -9.00, and core
+    // refused the payment): it is capped at the child's fee.
+    $siblingDiscountFee = min((float) $siblingDiscountFee, max(0.0, (float) $sellFee));
+    $sellFee = max(0.0, round((float) $sellFee - $siblingDiscountFee, 2));
 
     return [$defaultFee, $sellFee, $discountAmount, $siblingDiscountFee, $discountName];
   }

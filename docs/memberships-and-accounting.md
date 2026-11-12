@@ -36,9 +36,16 @@ extension adds:
 | One per child: "Child Name: Membership - <price option>" | `civicrm_membership` / the child's membership | The child's fee | From the child's price option in the "Membership Amount" price set |
 | One per family discount | `civicrm_contribution` / the contribution | Negative discount | Same as the member lines (page financial type if none) |
 
-With installments the line items carry the **full** amounts while each
-installment contribution is for the installment amount. Later installments
-are created by the payment processor from the recurring contribution.
+With installments each installment contribution is for the installment
+amount, so its line items are scaled to it
+(`CRM_Memberships_Utils::scaleLineItemsToTotal()`): every line gets the same
+share of its full amount, rounded to the cent, and the largest line takes the
+cents lost to rounding, so the lines add up to the contribution. Core
+allocates a payment to the line items in proportion to the contribution's
+balance; with the full amounts on an installment, an installment of 460.00 of
+a 920.00 family total was allocated 920.00. Later installments are created by
+the payment processor from the recurring contribution and copy its line
+items.
 
 ## Financial records
 

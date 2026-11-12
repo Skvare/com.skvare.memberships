@@ -545,6 +545,11 @@ class CRM_Memberships_Utils {
    */
   public static function addLineItems($contribution, $lineItems, $paymentProcessorID = NULL) {
 
+    // An instalment contribution is for one instalment, not the family total.
+    if (!empty($contribution['contribution_recur_id'])) {
+      $lineItems = self::scaleLineItemsToTotal($lineItems, $contribution['total_amount']);
+    }
+
     $defaultParams = [
       'entity_table' => "civicrm_membership",
       'contribution_id' => $contribution['id'],
@@ -575,6 +580,73 @@ class CRM_Memberships_Utils {
         'message' => $exception->getMessage(),
       ]);
     }
+  }
+
+  /**
+   * Scale the line items of an instalment contribution to its total.
+   *
+   * makeLineItemArray2() gives the family's full fees, but an instalment
+   * contribution is for one instalment. Core allocates a payment to the line
+   * items in proportion to the contribution's balance, so with the full fees
+   * on an instalment of 460.00 of a 920.00 family total, the payment of
+   * 460.00 was allocated 920.00. Each line gets its share of the instalment
+   * instead, so the lines add up to the contribution. The processor's later
+   * instalments copy their line items from this contribution.
+   *
+   * @param array $lineItems
+   *   As returned by makeLineItemArray2().
+   * @param float|string $contributionTotal
+   *
+   * @return array
+   *   $lineItems with line_total and unit_price scaled.
+   */
+  public static function scaleLineItemsToTotal(array $lineItems, $contributionTotal): array {
+    $total = round((float) $contributionTotal, 2);
+    $sum = 0.0;
+    foreach ($lineItems['members'] ?? [] as $contact) {
+      foreach ($contact['lineItems'] as $lineItem) {
+        $sum += (float) $lineItem['line_total'];
+      }
+    }
+    foreach ($lineItems['otherDiscount'] ?? [] as $otherDiscount) {
+      $sum += (float) $otherDiscount['line_total'];
+    }
+    $sum = round($sum, 2);
+    if ($total <= 0 || $sum <= 0 || $total >= $sum) {
+      return $lineItems;
+    }
+
+    $ratio = $total / $sum;
+    $scaledSum = 0.0;
+    $largest = NULL;
+    foreach ($lineItems['members'] ?? [] as $cid => $contact) {
+      foreach ($contact['lineItems'] as $key => $lineItem) {
+        // Every line has qty 1.
+        $lineTotal = round((float) $lineItem['line_total'] * $ratio, 2);
+        $lineItems['members'][$cid]['lineItems'][$key]['line_total'] = $lineTotal;
+        $lineItems['members'][$cid]['lineItems'][$key]['unit_price'] = $lineTotal;
+        $scaledSum += $lineTotal;
+        if ($largest === NULL || $lineTotal > $lineItems['members'][$largest[0]]['lineItems'][$largest[1]]['line_total']) {
+          $largest = [$cid, $key];
+        }
+      }
+    }
+    foreach ($lineItems['otherDiscount'] ?? [] as $index => $otherDiscount) {
+      $lineTotal = round((float) $otherDiscount['line_total'] * $ratio, 2);
+      $lineItems['otherDiscount'][$index]['line_total'] = $lineTotal;
+      $lineItems['otherDiscount'][$index]['unit_price'] = $lineTotal;
+      $scaledSum += $lineTotal;
+    }
+    // The cents lost to rounding go to the largest line.
+    $difference = round($total - $scaledSum, 2);
+    if ($difference != 0 && $largest !== NULL) {
+      $lineTotal = round($lineItems['members'][$largest[0]]['lineItems'][$largest[1]]['line_total'] + $difference, 2);
+      $lineItems['members'][$largest[0]]['lineItems'][$largest[1]]['line_total'] = $lineTotal;
+      $lineItems['members'][$largest[0]]['lineItems'][$largest[1]]['unit_price'] = $lineTotal;
+    }
+    $lineItems['total'] = $total;
+
+    return $lineItems;
   }
 
   /**
